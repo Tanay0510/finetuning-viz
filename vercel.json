@@ -2,22 +2,15 @@
   "version": 2,
   "builds": [
     {
-      "src": "init_db.py",
-      "use": "@vercel/python"
-    },
-    {
       "src": "app.py",
-      "use": "@vercel/python"
+      "use": "@vercel/python",
+      "config": { "buildCommand": "bash build.sh" }
     }
   ],
   "routes": [
     {
-      "src": "/init-db",
-      "dest": "/init_db.py"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/app.py"
+      "dest": "app.py"
     }
   ]
 }
