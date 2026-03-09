@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Join the Studio — llmviz.studio{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-5 py-24 flex items-center justify-center">
+  <div class="w-full max-w-[440px] bg-brand-bg2 border border-brand-border rounded-[32px] p-10 shadow-2xl fade-up">
+    <div class="text-center mb-10">
+      <div class="w-12 h-12 bg-brand-accent/10 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-brand-accent/20">
+        <span class="text-2xl text-brand-accent">🚀</span>
+      </div>
+      <h1 class="text-3xl font-bold tracking-tight mb-2">Create Account</h1>
+      <p class="text-brand-text2 text-sm">Join thousands of LLM engineers</p>
+    </div>
+
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <div class="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs text-center">
+          {{ messages[0] }}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" class="space-y-5">
+      <div>
+        <label class="block text-[10px] font-mono font-bold text-brand-text3 uppercase tracking-[0.2em] mb-2 ml-1">Full Name</label>
+        <input type="text" name="name" required placeholder="John Doe" 
+               class="w-full bg-brand-bg border border-brand-border rounded-xl px-5 py-3.5 text-sm text-brand-text focus:outline-none focus:border-brand-accent transition-all placeholder:text-brand-text3">
+      </div>
+      <div>
+        <label class="block text-[10px] font-mono font-bold text-brand-text3 uppercase tracking-[0.2em] mb-2 ml-1">Email Address</label>
+        <input type="email" name="email" required placeholder="name@company.com" 
+               class="w-full bg-brand-bg border border-brand-border rounded-xl px-5 py-3.5 text-sm text-brand-text focus:outline-none focus:border-brand-accent transition-all placeholder:text-brand-text3">
+      </div>
+      <div>
+        <label class="block text-[10px] font-mono font-bold text-brand-text3 uppercase tracking-[0.2em] mb-2 ml-1">Password</label>
+        <input type="password" name="password" required placeholder="••••••••" 
+               class="w-full bg-brand-bg border border-brand-border rounded-xl px-5 py-3.5 text-sm text-brand-text focus:outline-none focus:border-brand-accent transition-all placeholder:text-brand-text3">
+      </div>
+      <button type="submit" class="btn-primary w-full justify-center !py-4 !rounded-xl !text-sm mt-4">Start Training</button>
+    </form>
+
+    <div class="mt-8 pt-8 border-t border-brand-border text-center">
+      <p class="text-brand-text2 text-xs">Already have an account? <a href="/login" class="text-brand-accent font-bold hover:underline">Sign in</a></p>
+    </div>
+  </div>
+</div>
+{% endblock %}
