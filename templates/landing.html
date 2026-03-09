@@ -3,99 +3,218 @@
 {% block title %}llmviz.studio — LLM Fine-Tuning Visualized{% endblock %}
 
 {% block head %}
+<!-- Tailwind is loaded in base.html -->
 <style>
-  /* Hero */
-  .hero{position:relative;min-height:92vh;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
-  .hero-bg{position:absolute;inset:0;z-index:0}
-  .hero-bg canvas{width:100%;height:100%}
-  .hero-content{position:relative;z-index:2;padding:0 20px}
-  .hero-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--bg2);font-size:11px;color:var(--text2);margin-bottom:20px;font-family:'JetBrains Mono',monospace}
-  .hero-badge .pulse{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
-  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{opacity:0.7;box-shadow:0 0 0 6px rgba(34,197,94,0)}}
-  .hero h1{font-size:clamp(36px,6vw,64px);font-weight:700;letter-spacing:-0.04em;line-height:1.1;max-width:700px;margin-bottom:16px}
-  .hero h1 .gradient{background:linear-gradient(135deg,#60A5FA,#A78BFA,#F472B6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-  .hero p{font-size:17px;color:var(--text2);max-width:520px;line-height:1.7;margin-bottom:32px;font-weight:400}
-  .hero-actions{display:flex;gap:10px;flex-wrap:wrap}
-
-  /* Method cards */
-  .methods-section{padding:80px 0 60px}
-  .section-header{margin-bottom:40px}
-  .section-header h2{font-size:28px;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
-  .section-header p{color:var(--text2);font-size:15px}
-
-  .method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  @media(max-width:768px){.method-grid{grid-template-columns:1fr}}
-
-  .method-card{
-    background:var(--bg2);border-radius:14px;padding:24px;
-    border:1px solid var(--border);cursor:pointer;
-    transition:all 0.35s cubic-bezier(0.22,1,0.36,1);
-    position:relative;overflow:hidden;
-  }
-  .method-card::before{
-    content:'';position:absolute;top:0;left:0;right:0;height:2px;
-    background:var(--card-color);opacity:0;transition:opacity 0.3s;
-  }
-  .method-card:hover{border-color:var(--card-color);transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,0.3)}
-  .method-card:hover::before{opacity:1}
-  .card-emoji{font-size:28px;margin-bottom:12px;display:block}
-  .card-name{font-size:16px;font-weight:700;margin-bottom:4px}
-  .card-tagline{font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5}
-  .card-formula{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--card-color);background:var(--bg);padding:6px 10px;border-radius:6px;margin-bottom:12px;overflow-x:auto;white-space:nowrap}
-  .card-stats{display:flex;gap:12px;flex-wrap:wrap}
-  .card-stat{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3)}
-  .card-stat span{color:var(--text2)}
-
-  /* Features strip */
-  .features{padding:60px 0 80px;border-top:1px solid var(--border)}
-  .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
-  @media(max-width:768px){.feature-grid{grid-template-columns:1fr}}
-  .feature{padding:24px;border-radius:12px;background:var(--bg2);border:1px solid var(--border)}
-  .feature-icon{font-size:24px;margin-bottom:12px}
-  .feature h3{font-size:15px;font-weight:600;margin-bottom:6px}
-  .feature p{font-size:13px;color:var(--text2);line-height:1.65}
-
-  /* Footer */
-  .footer{padding:40px 0;border-top:1px solid var(--border);text-align:center}
-  .footer p{font-size:12px;color:var(--text3)}
-  .footer a{color:var(--text2)}
-  .footer a:hover{color:var(--text)}
+  /* Custom animations that Tailwind doesn't handle natively by default in the CDN version */
+  @keyframes pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } }
+  .animate-pulse-slow { animation: pulse 2s infinite; }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Hero -->
-<section class="hero">
-  <div class="hero-bg"><canvas id="hero-canvas"></canvas></div>
-  <div class="container hero-content">
-    <div class="hero-badge fade-up"><span class="pulse"></span> Open source · Free forever</div>
-    <h1 class="fade-up delay-1">LLM Fine-Tuning<br/><span class="gradient">Visualized in 3D</span></h1>
-    <p class="fade-up delay-2">Interactive explorations of LoRA, QLoRA, DPO, and more. See how each method works, calculate GPU costs, and find the right approach for your project.</p>
-    <div class="hero-actions fade-up delay-3">
-      <a href="/explore" class="btn btn-primary">🔬 3D Explorer</a>
-      <a href="/playground" class="btn btn-ghost">⚡ GPU Playground</a>
+<section class="relative min-h-[95vh] flex items-center overflow-hidden pb-[60px]">
+  <div class="absolute inset-0 z-0 pointer-events-none opacity-60">
+    <canvas id="hero-canvas" class="w-full h-full"></canvas>
+  </div>
+  <div class="container relative z-10 grid grid-cols-1 lg:grid-cols-[1.2fr,1fr] gap-[40px] items-center mx-auto px-5">
+    <div class="max-w-[600px] text-center lg:text-left">
+      <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-brand-border2 bg-brand-bg2 text-[11px] text-brand-text2 mb-6 font-mono fade-up">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse-slow"></span>
+        v2.0 Released · New 3D Engine
+      </div>
+      <h1 class="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.05] mb-5 fade-up delay-1">
+        LLM Fine-Tuning<br/>
+        <span class="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(96,165,250,0.3)]">Visual Studio</span>
+      </h1>
+      <p class="text-lg text-brand-text2 leading-relaxed mb-9 fade-up delay-2 mx-auto lg:mx-0">
+        Interactive 3D visualizations of modern parameter-efficient fine-tuning (PEFT) methods. Understand memory bottlenecks, architectural trade-offs, and scaling laws.
+      </p>
+      <div class="flex flex-wrap gap-3 justify-center lg:justify-start fade-up delay-3">
+        {% if current_user.is_authenticated %}
+          <a href="/explore" class="btn-primary px-7 py-3 text-base">🔬 Open 3D Explorer</a>
+          <a href="/playground" class="btn-ghost px-7 py-3 text-base">⚡ GPU Playground</a>
+        {% else %}
+          <a href="/register" class="btn-primary px-10 py-4 text-base rounded-2xl">🚀 Join the Studio</a>
+          <a href="/login" class="btn-ghost px-10 py-4 text-base rounded-2xl">Sign In</a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="relative h-[400px] flex items-center justify-center fade-in delay-2" id="hero-3d-container">
+      <!-- Three.js Mini-Explorer injected here -->
     </div>
   </div>
 </section>
 
-<!-- Methods -->
-<section class="methods-section">
-  <div class="container">
-    <div class="section-header fade-up">
-      <h2>Six Methods, One Visual Language</h2>
-      <p>Click any card to explore its 3D visualization</p>
+<!-- Tech Stack -->
+<section class="py-12 border-y border-brand-border bg-white/[0.01]">
+  <div class="container mx-auto px-5 flex flex-wrap justify-center items-center gap-10 md:gap-16 opacity-50 grayscale select-none">
+    <div class="font-mono text-xs font-semibold tracking-[0.2em]">TRANSFORMERS</div>
+    <div class="font-mono text-xs font-semibold tracking-[0.2em]">HUGGING FACE</div>
+    <div class="font-mono text-xs font-semibold tracking-[0.2em]">THREE.JS</div>
+    <div class="font-mono text-xs font-semibold tracking-[0.2em]">PYTORCH</div>
+    <div class="font-mono text-xs font-semibold tracking-[0.2em]">PEFT</div>
+  </div>
+</section>
+
+<!-- Workflow Steps -->
+<section class="py-24 bg-brand-bg2 relative overflow-hidden">
+  <!-- Center Line -->
+  <div class="absolute left-1/2 top-[180px] bottom-[100px] w-px bg-gradient-to-b from-brand-accent to-transparent opacity-20 hidden md:block -translate-x-1/2"></div>
+  
+  <div class="container mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
+      <span class="text-[10px] uppercase tracking-[0.2em] font-mono text-brand-accent mb-3 block">The Workflow</span>
+      <h2 class="text-4xl font-bold tracking-tight mb-4">From Concept to Code</h2>
+      <p class="text-brand-text2 text-lg">llmviz helps you through the entire lifecycle of choosing and implementing a fine-tuning strategy.</p>
     </div>
-    <div class="method-grid">
+
+    <!-- Step 1 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center mb-24 relative fade-up">
+      <div class="md:text-right">
+        <div class="w-10 h-10 rounded-full bg-brand-bg border-2 border-brand-accent flex items-center justify-center font-mono font-bold text-brand-accent mb-6 md:absolute md:left-1/2 md:-translate-x-1/2 md:z-10">1</div>
+        <h3 class="text-2xl font-bold mb-4">Analyze Constraints</h3>
+        <p class="text-brand-text2 leading-relaxed">Use the selection guide to input your hardware specs, model size, and task requirements. We'll find the methods that actually fit in your VRAM.</p>
+      </div>
+      <div>
+        <div class="bg-brand-bg3 rounded-2xl aspect-video border border-brand-border2 overflow-hidden flex items-center justify-center relative shadow-2xl group">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent)]"></div>
+          <div class="w-full h-full p-12 flex flex-col justify-center relative">
+            <div class="h-1.5 rounded-full bg-brand-border2 mb-4 w-[70%] relative overflow-hidden">
+              <div class="absolute inset-0 bg-brand-accent w-full animate-[shimmer_2s_infinite]"></div>
+            </div>
+            <div class="h-1.5 rounded-full bg-brand-border2 mb-4 w-[40%]"></div>
+            <div class="h-1.5 rounded-full bg-brand-border2 mb-4 w-[85%] relative overflow-hidden">
+               <div class="absolute inset-0 bg-brand-accent w-full animate-[shimmer_2s_infinite_0.5s]"></div>
+            </div>
+            <div class="absolute inset-0 bg-[radial-gradient(var(--border2)_1px,transparent_1px)] bg-[length:20px_20px] opacity-20"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center mb-24 relative fade-up">
+      <div class="md:order-2">
+        <div class="w-10 h-10 rounded-full bg-brand-bg border-2 border-brand-accent flex items-center justify-center font-mono font-bold text-brand-accent mb-6 md:absolute md:left-1/2 md:-translate-x-1/2 md:z-10">2</div>
+        <h3 class="text-2xl font-bold mb-4">Visualize Architecture</h3>
+        <p class="text-brand-text2 leading-relaxed">Step inside the model. See how LoRA matrices interact with frozen weights or how Prefix vectors steer attention heads in real-time 3D.</p>
+      </div>
+      <div class="md:order-1">
+        <div class="bg-brand-bg3 rounded-2xl aspect-video border border-brand-border2 overflow-hidden flex items-center justify-center relative shadow-2xl">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent)]"></div>
+          <div class="w-full h-full relative">
+            <div class="absolute w-2 h-2 rounded-full bg-brand-border2 border border-white/20 top-[20%] left-[20%]"></div>
+            <div class="absolute w-2 h-2 rounded-full bg-brand-accent border border-white/20 top-[50%] left-[50%] shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+            <div class="absolute w-2 h-2 rounded-full bg-brand-border2 border border-white/20 top-[80%] left-[30%]"></div>
+            <div class="absolute w-2 h-2 rounded-full bg-brand-border2 border border-white/20 top-[40%] left-[80%]"></div>
+            <svg class="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <line x1="20" y1="20" x2="50" y2="50" stroke="white" stroke-width="0.5" />
+              <line x1="50" y1="50" x2="80" y2="40" stroke="white" stroke-width="0.5" />
+              <line x1="50" y1="50" x2="30" y2="80" stroke="white" stroke-width="0.5" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center relative fade-up">
+      <div class="md:text-right">
+        <div class="w-10 h-10 rounded-full bg-brand-bg border-2 border-brand-accent flex items-center justify-center font-mono font-bold text-brand-accent mb-6 md:absolute md:left-1/2 md:-translate-x-1/2 md:z-10">3</div>
+        <h3 class="text-2xl font-bold mb-4">Calculate VRAM & Costs</h3>
+        <p class="text-brand-text2 leading-relaxed">Adjust parameters like rank, alpha, and batch size in the playground. Get instant feedback on memory usage and estimated training hours.</p>
+      </div>
+      <div>
+        <div class="bg-brand-bg3 rounded-2xl aspect-video border border-brand-border2 overflow-hidden flex items-center justify-center relative shadow-2xl">
+          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent)]"></div>
+          <div class="w-full h-full p-12 flex flex-col justify-center relative">
+            <div class="w-full h-3 bg-brand-bg border border-brand-border2 rounded-full overflow-hidden mb-5">
+              <div class="h-full bg-gradient-to-r from-brand-accent to-brand-accent2 w-[75%]"></div>
+            </div>
+            <div class="font-mono text-base text-brand-text mb-3">18.4GB / 24GB</div>
+            <div class="inline-block px-3 py-1 rounded bg-brand-accent text-[10px] font-bold text-white w-fit tracking-wider">OPTIMIZED</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Comparison Section -->
+<section class="py-24 border-t border-brand-border">
+  <div class="container mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
+      <span class="text-[10px] uppercase tracking-[0.2em] font-mono text-brand-accent mb-3 block">Architecture Comparison</span>
+      <h2 class="text-4xl font-bold tracking-tight mb-4">Parameter Efficiency Visualized</h2>
+      <p class="text-brand-text2 text-lg">Compare how different methods modify the model's weight matrices. See why PEFT is so efficient.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Full FT -->
+      <div class="bg-brand-bg2 rounded-[32px] border border-brand-border overflow-hidden fade-up group hover:border-[#FF4060]/30 transition-colors">
+        <div class="h-64 bg-black relative flex items-center justify-center p-12">
+          <div class="w-32 h-32 bg-[#FF4060] rounded-xl shadow-[0_0_40px_rgba(255,64,96,0.4)] animate-pulse"></div>
+          <div class="absolute bottom-6 font-mono text-[9px] text-brand-text3 tracking-[0.2em]">FULL PARAMETER UPDATES</div>
+        </div>
+        <div class="p-8">
+          <h3 class="text-2xl font-bold mb-3">Full Fine-Tuning</h3>
+          <p class="text-brand-text2 leading-relaxed mb-6">Every single weight in the model is updated. This requires massive VRAM for gradients and optimizer states.</p>
+          <div class="flex justify-between items-center font-mono text-sm font-semibold pt-6 border-t border-brand-border">
+            <span class="text-brand-text3">Trainable Parameters:</span>
+            <span class="text-[#FF4060]">100%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- LoRA -->
+      <div class="bg-brand-bg2 rounded-[32px] border border-brand-border overflow-hidden fade-up delay-1 group hover:border-brand-accent/30 transition-colors">
+        <div class="h-64 bg-black relative flex items-center justify-center p-12">
+          <div class="w-32 h-32 bg-brand-bg3 rounded-xl border border-brand-border2 relative overflow-hidden">
+            <div class="absolute inset-x-0 h-1.5 bg-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.8)] top-[15%] animate-pulse"></div>
+            <div class="absolute inset-x-0 h-1.5 bg-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.8)] top-[45%] animate-pulse"></div>
+            <div class="absolute inset-x-0 h-1.5 bg-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.8)] top-[75%] animate-pulse"></div>
+          </div>
+          <div class="absolute bottom-6 font-mono text-[9px] text-brand-text3 tracking-[0.2em]">LOW-RANK ADAPTERS ONLY</div>
+        </div>
+        <div class="p-8">
+          <h3 class="text-2xl font-bold mb-3">LoRA (Low-Rank)</h3>
+          <p class="text-brand-text2 leading-relaxed mb-6">Original weights are frozen. Only tiny rank-decomposition matrices are trained and injected into layers.</p>
+          <div class="flex justify-between items-center font-mono text-sm font-semibold pt-6 border-t border-brand-border">
+            <span class="text-brand-text3">Trainable Parameters:</span>
+            <span class="text-brand-accent">&lt; 1%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Methods Grid -->
+<section class="py-24" id="methods">
+  <div class="container mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
+      <span class="text-[10px] uppercase tracking-[0.2em] font-mono text-brand-accent mb-3 block">Method Library</span>
+      <h2 class="text-4xl font-bold tracking-tight mb-4">Supported Strategies</h2>
+      <p class="text-brand-text2 text-lg">Select a method to see the full 3D breakdown, paper details, and production-ready code snippets.</p>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {% for m in methods %}
-      <a href="/learn/{{ m.id }}" class="method-card fade-up delay-{{ loop.index % 4 }}" style="--card-color:{{ m.color }}">
-        <span class="card-emoji">{{ m.emoji }}</span>
-        <div class="card-name" style="color:{{ m.color }}">{{ m.name }}</div>
-        <div class="card-tagline">{{ m.tagline }}</div>
-        <div class="card-formula">{{ m.formula }}</div>
-        <div class="card-stats">
-          <div class="card-stat">Params: <span>{{ m.stats.params }}</span></div>
-          <div class="card-stat">VRAM 7B: <span>{{ m.stats.vram_7b }}</span></div>
-          <div class="card-stat">Save: <span>{{ m.stats.checkpoint }}</span></div>
+      <a href="/learn/{{ m.id }}" class="group relative flex flex-col bg-brand-bg2 rounded-2xl p-8 border border-brand-border hover:border-[var(--card-color)] hover:-translate-y-2 transition-all duration-300 fade-up delay-{{ loop.index % 6 }}" style="--card-color:{{ m.color }}">
+        <div class="absolute top-6 right-6 px-3 py-1 rounded-full bg-brand-bg3 border border-brand-border2 font-mono text-[10px] text-brand-text3 group-hover:text-[var(--card-color)] group-hover:border-[var(--card-color)] transition-colors">~{{ m.stats.vram_7b }} VRAM</div>
+        <span class="text-4xl mb-6 block">{{ m.emoji }}</span>
+        <div class="text-xl font-bold mb-2 transition-colors" style="color:{{ m.color }}">{{ m.name }}</div>
+        <div class="text-sm text-brand-text2 leading-relaxed mb-6 min-h-[40px]">{{ m.tagline }}</div>
+        <div class="font-mono text-[11px] p-3 rounded-xl bg-black/40 border border-white/[0.05] mb-8 overflow-x-auto whitespace-nowrap" style="color:{{ m.color }}">{{ m.formula }}</div>
+        <div class="flex justify-between mt-auto pt-6 border-t border-brand-border">
+          <div class="flex flex-col">
+            <span class="text-[10px] text-brand-text3 uppercase tracking-wider mb-1">Trainable</span>
+            <span class="font-mono text-xs font-bold">{{ m.stats.params }}</span>
+          </div>
+          <div class="flex flex-col text-right">
+            <span class="text-[10px] text-brand-text3 uppercase tracking-wider mb-1">Speed</span>
+            <span class="font-mono text-xs font-bold">{{ m.stats.speed }}</span>
+          </div>
         </div>
       </a>
       {% endfor %}
@@ -103,37 +222,50 @@
   </div>
 </section>
 
-<!-- Features -->
-<section class="features">
-  <div class="container">
-    <div class="section-header fade-up">
-      <h2>Built for Engineers</h2>
-      <p>More than just pretty graphics</p>
-    </div>
-    <div class="feature-grid">
-      <div class="feature fade-up">
-        <div class="feature-icon">🔬</div>
-        <h3>3D Neural Network Viz</h3>
-        <p>Interactive Three.js scenes showing actual architecture — frozen weights, adapters, gradient flow. Drag to orbit, scroll to zoom.</p>
-      </div>
-      <div class="feature fade-up delay-1">
-        <div class="feature-icon">⚡</div>
-        <h3>GPU Playground</h3>
-        <p>Select your hardware, pick a model size, adjust LoRA rank — see real-time VRAM estimates, training cost, and whether your setup fits.</p>
-      </div>
-      <div class="feature fade-up delay-2">
-        <div class="feature-icon">📋</div>
-        <h3>Code Snippets</h3>
-        <p>Copy-paste HuggingFace PEFT code for every method. Real, runnable examples — not pseudocode.</p>
-      </div>
+<!-- Final CTA -->
+<section class="py-32 bg-gradient-to-b from-transparent to-brand-bg2">
+  <div class="container mx-auto px-5 text-center fade-up">
+    <h2 class="text-5xl md:text-6xl font-bold tracking-tight mb-8">Ready to optimize?</h2>
+    <p class="text-brand-text2 text-xl max-w-2xl mx-auto mb-12">Join thousands of engineers using llmviz to understand and implement PEFT methods.</p>
+    <div class="flex flex-wrap justify-center gap-5">
+      <a href="/guide" class="btn-primary px-10 py-4 text-base rounded-2xl">Start the Selection Guide</a>
+      <a href="https://github.com/Tanaybh/finetuning-viz" class="btn-ghost px-10 py-4 text-base rounded-2xl">Star on GitHub</a>
     </div>
   </div>
 </section>
 
 <!-- Footer -->
-<footer class="footer">
-  <div class="container">
-    <p>Built by <a href="https://github.com/Tanaybh" target="_blank">Tanay Bhardwaj</a> · <a href="https://huggingface.co/Tanaybh" target="_blank">HuggingFace</a></p>
+<footer class="py-20 border-t border-brand-border bg-brand-bg">
+  <div class="container mx-auto px-5">
+    <div class="grid grid-cols-1 md:grid-cols-[2fr,1fr,1fr] gap-16 mb-16">
+      <div>
+        <span class="text-2xl font-bold mb-6 block">llmviz.studio</span>
+        <p class="text-brand-text2 text-base leading-relaxed max-w-xs">The visual authority on LLM fine-tuning architecture and resource optimization.</p>
+      </div>
+      <div>
+        <h4 class="text-xs uppercase tracking-[0.2em] text-brand-text3 font-bold mb-8">Product</h4>
+        <ul class="space-y-4">
+          <li><a href="/explore" class="text-brand-text2 hover:text-brand-accent transition-colors">3D Explorer</a></li>
+          <li><a href="/playground" class="text-brand-text2 hover:text-brand-accent transition-colors">GPU Playground</a></li>
+          <li><a href="/guide" class="text-brand-text2 hover:text-brand-accent transition-colors">Method Guide</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-xs uppercase tracking-[0.2em] text-brand-text3 font-bold mb-8">Resources</h4>
+        <ul class="space-y-4">
+          <li><a href="https://arxiv.org/abs/2106.09685" target="_blank" class="text-brand-text2 hover:text-brand-accent transition-colors">LoRA Paper</a></li>
+          <li><a href="https://huggingface.co/docs/peft" target="_blank" class="text-brand-text2 hover:text-brand-accent transition-colors">PEFT Docs</a></li>
+          <li><a href="https://github.com/Tanaybh" target="_blank" class="text-brand-text2 hover:text-brand-accent transition-colors">Creator</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="pt-10 border-t border-brand-border flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-brand-text3">
+      <p>&copy; 2026 llmviz.studio · Created by Tanay Bhardwaj</p>
+      <div class="flex gap-8">
+        <a href="#" class="hover:text-brand-text transition-colors">Twitter</a>
+        <a href="#" class="hover:text-brand-text transition-colors">GitHub</a>
+      </div>
+    </div>
   </div>
 </footer>
 {% endblock %}
@@ -162,7 +294,6 @@
 
   function draw(){
     ctx.clearRect(0,0,w,h);
-    const t = Date.now();
     blobs.forEach(b => {
       b.x += b.vx; b.y += b.vy;
       if(b.x < 0 || b.x > 1) b.vx *= -1;
@@ -174,7 +305,7 @@
       ctx.fillRect(0,0,w,h);
     });
 
-    // Grid lines (very subtle)
+    // Grid lines
     ctx.strokeStyle = 'rgba(255,255,255,0.015)';
     ctx.lineWidth = 0.5;
     const gridSize = 60;
@@ -187,6 +318,75 @@
     requestAnimationFrame(draw);
   }
   draw();
+})();
+
+// Three.js Hero Mini-Explorer
+(function(){
+  const container = document.getElementById('hero-3d-container');
+  if(!container || typeof THREE === 'undefined') return;
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+  renderer.setSize(container.offsetWidth, container.offsetHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+
+  const group = new THREE.Group();
+  scene.add(group);
+
+  const nodeCount = 40;
+  const nodes = [];
+  const nodeGeometry = new THREE.SphereGeometry(0.12, 16, 16);
+  const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x3B82F6 });
+  
+  for(let i=0; i<nodeCount; i++) {
+    const mesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
+    mesh.position.set(
+      (Math.random() - 0.5) * 6,
+      (Math.random() - 0.5) * 6,
+      (Math.random() - 0.5) * 6
+    );
+    group.add(mesh);
+    nodes.push(mesh.position);
+  }
+
+  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x3B82F6, transparent: true, opacity: 0.2 });
+  for(let i=0; i<nodes.length; i++) {
+    for(let j=i+1; j<nodes.length; j++) {
+      const dist = nodes[i].distanceTo(nodes[j]);
+      if(dist < 2.5) {
+        const points = [nodes[i], nodes[j]];
+        const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
+        const line = new THREE.Line(lineGeometry, lineMaterial);
+        group.add(line);
+      }
+    }
+  }
+
+  camera.position.z = 6;
+
+  let mouseX = 0, mouseY = 0;
+  window.addEventListener('mousemove', (e) => {
+    mouseX = (e.clientX / window.innerWidth - 0.5) * 0.5;
+    mouseY = (e.clientY / window.innerHeight - 0.5) * 0.5;
+  });
+
+  function animate() {
+    requestAnimationFrame(animate);
+    group.rotation.y += 0.002;
+    group.rotation.x += 0.001;
+    group.rotation.y += mouseX * 0.05;
+    group.rotation.x += mouseY * 0.05;
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', () => {
+    camera.aspect = container.offsetWidth / container.offsetHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.offsetWidth, container.offsetHeight);
+  });
 })();
 </script>
 {% endblock %}
