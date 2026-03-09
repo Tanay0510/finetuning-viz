@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM Fine-Tuning — 3D Visualizer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: #020408;
+      color: #E2E8F0;
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 24px 16px 48px; }
+
+    h1 {
+      font-size: 28px; font-weight: 800; letter-spacing: -0.03em;
+      background: linear-gradient(135deg, #F8FAFC, var(--accent));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      transition: all 0.5s; margin-bottom: 3px;
+    }
+    .subtitle { font-family: 'Fira Code', monospace; font-size: 10px; color: #1e2a40; margin-bottom: 18px; }
+
+    /* Method selector */
+    .methods { display: flex; gap: 5px; margin-bottom: 14px; flex-wrap: wrap; }
+    .methods button {
+      padding: 8px 14px; border-radius: 8px; cursor: pointer;
+      display: flex; align-items: center; gap: 7px;
+      border: 1.5px solid #0e1524; background: #060a14;
+      transition: all 0.25s; font-family: 'Outfit', sans-serif;
+    }
+    .methods button.active {
+      border-color: var(--color); background: color-mix(in srgb, var(--color) 8%, transparent);
+      box-shadow: 0 0 14px color-mix(in srgb, var(--color) 15%, transparent);
+    }
+    .methods button .emoji { font-size: 14px; }
+    .methods button .label { font-size: 12px; font-weight: 400; color: #3a4a60; }
+    .methods button.active .label { font-weight: 700; color: var(--color); }
+
+    /* 3D canvas area */
+    .canvas-wrap {
+      border-radius: 16px; overflow: hidden; position: relative;
+      border: 1px solid color-mix(in srgb, var(--color) 8%, transparent);
+      box-shadow: 0 0 50px color-mix(in srgb, var(--color) 4%, transparent);
+    }
+    #scene-canvas { width: 100%; height: 540px; display: block; cursor: grab; }
+    #scene-canvas:active { cursor: grabbing; }
+
+    .overlay-title {
+      position: absolute; top: 14px; left: 16px; z-index: 10;
+      animation: fadeIn 0.4s ease-out;
+    }
+    .overlay-title .name {
+      font-size: 22px; font-weight: 800; color: #F1F5F9;
+      text-shadow: 0 0 18px color-mix(in srgb, var(--color) 30%, transparent);
+    }
+    .live-badge {
+      position: absolute; top: 14px; right: 16px; z-index: 10;
+      display: flex; align-items: center; gap: 5px;
+      font-family: 'Fira Code', monospace; font-size: 9px; color: var(--color);
+    }
+    .live-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--color);
+      animation: blink 1.5s infinite;
+    }
+    .controls-hint {
+      position: absolute; bottom: 12px; right: 16px; z-index: 10;
+      font-family: 'Fira Code', monospace; font-size: 9px; color: #1e2a40;
+    }
+
+    /* Info panels */
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+    .info-panel {
+      background: #060a14; border-radius: 12px; padding: 18px;
+      border: 1px solid color-mix(in srgb, var(--color) 5%, transparent);
+      animation: fadeIn 0.4s ease-out;
+    }
+    .info-panel.accent-bg {
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--color) 3%, transparent),
+        color-mix(in srgb, var(--color) 6%, transparent));
+      border-color: color-mix(in srgb, var(--color) 8%, transparent);
+    }
+    .info-label {
+      font-family: 'Fira Code', monospace; font-size: 9px;
+      text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px;
+    }
+    .info-label.method-color { color: var(--color); }
+    .info-label.dim { color: #3a4a60; }
+    .info-text { font-size: 13px; line-height: 1.85; color: #8a9bb8; font-weight: 300; }
+    .formula-box {
+      font-family: 'Fira Code', monospace; font-size: 12px; color: var(--color);
+      background: #0a0e1a; border-radius: 6px; padding: 8px 12px;
+      border: 1px solid #111828; margin-top: 10px;
+    }
+
+    /* Stats grid */
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+    .stat-item {
+      font-family: 'Fira Code', monospace; font-size: 10px; color: #64748B; line-height: 1.7;
+    }
+    .stat-val { color: #94A3B8; }
+
+    /* Insight box */
+    .insight-box {
+      margin-top: 14px; padding: 18px; border-radius: 12px;
+      background: linear-gradient(135deg,
+        color-mix(in srgb, var(--color) 3%, transparent),
+        color-mix(in srgb, var(--color) 7%, transparent));
+      border: 1px solid color-mix(in srgb, var(--color) 10%, transparent);
+      animation: fadeIn 0.5s ease-out;
+    }
+    .insight-text {
+      font-size: 13px; line-height: 1.85; color: #b0bdd0; font-weight: 300; font-style: italic;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1 id="main-title">Neural Network · Fine-Tuning</h1>
+    <p class="subtitle">Drag to orbit · Scroll to zoom · Watch data flow through the network</p>
+
+    <div class="methods" id="method-buttons"></div>
+
+    <div class="canvas-wrap" id="canvas-wrap">
+      <div class="overlay-title">
+        <div class="name" id="overlay-name"></div>
+      </div>
+      <div class="live-badge"><div class="live-dot"></div>LIVE</div>
+      <div class="controls-hint">🖱 Drag to rotate · ⚙ Scroll to zoom</div>
+      <canvas id="scene-canvas"></canvas>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-panel" id="desc-panel">
+        <div class="info-label method-color">What You're Seeing</div>
+        <p class="info-text" id="desc-text"></p>
+        <div class="formula-box" id="formula-text"></div>
+      </div>
+      <div class="info-panel accent-bg" id="stats-panel">
+        <div class="info-label dim">At a Glance</div>
+        <div class="stats-grid" id="stats-grid"></div>
+      </div>
+    </div>
+
+    <div class="insight-box" id="insight-box">
+      <div class="info-label method-color">Key Insight</div>
+      <p class="insight-text" id="insight-text"></p>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════
+    // DATA (injected from Flask)
+    // ═══════════════════════════════════════
+    const METHODS = {{ methods | tojson }};
+
+    let currentMethod = METHODS[1]; // default: LoRA
+    let scene, camera, renderer, sceneData;
+    let camAngle = { th: 0.3, ph: 0.12, d: 24 };
+    let mouse = { dn: false, lx: 0, ly: 0 };
+    let disposed = false;
+
+    // ═══════════════════════════════════════
+    // UI SETUP
+    // ═══════════════════════════════════════
+    function setupUI() {
+      const btnContainer = document.getElementById('method-buttons');
+      METHODS.forEach(m => {
+        const btn = document.createElement('button');
+        btn.innerHTML = `<span class="emoji">${m.emoji}</span><span class="label">${m.short}</span>`;
+        btn.dataset.id = m.id;
+        btn.addEventListener('click', () => selectMethod(m.id));
+        btnContainer.appendChild(btn);
+      });
+      selectMethod(currentMethod.id);
+    }
+
+    function selectMethod(id) {
+      currentMethod = METHODS.find(m => m.id === id);
+      // Update CSS vars
+      document.body.style.setProperty('--color', currentMethod.color);
+      document.body.style.setProperty('--accent', currentMethod.accent);
+      // Update buttons
+      document.querySelectorAll('.methods button').forEach(b => {
+        b.classList.toggle('active', b.dataset.id === id);
+        b.style.setProperty('--color', METHODS.find(m => m.id === b.dataset.id).color);
+      });
+      // Update text
+      document.getElementById('overlay-name').textContent = `${currentMethod.emoji} ${currentMethod.name}`;
+      document.getElementById('desc-text').textContent = currentMethod.desc;
+      document.getElementById('formula-text').textContent = currentMethod.formula;
+      document.getElementById('insight-text').textContent = currentMethod.insight;
+
+      const statsGrid = document.getElementById('stats-grid');
+      statsGrid.innerHTML = '';
+      for (const [key, val] of Object.entries(currentMethod.stats)) {
+        const label = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        statsGrid.innerHTML += `<div class="stat-item">${label}: <span class="stat-val">${val}</span></div>`;
+      }
+
+      // Rebuild 3D scene
+      rebuildScene();
+    }
+
+    // ═══════════════════════════════════════
+    // THREE.JS SCENE
+    // ═══════════════════════════════════════
+    function initThree() {
+      const canvas = document.getElementById('scene-canvas');
+      const W = canvas.clientWidth || 720;
+      const H = canvas.clientHeight || 540;
+
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(38, W / H, 0.1, 300);
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setSize(W, H);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setClearColor(0x020408, 1);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.1;
+
+      camera.position.set(0, 3, 24);
+      camera.lookAt(0, 0, 0);
+
+      // Input handlers
+      canvas.addEventListener('mousedown', e => { mouse = { dn: true, lx: e.clientX, ly: e.clientY }; });
+      canvas.addEventListener('mousemove', e => {
+        if (!mouse.dn) return;
+        camAngle.th -= (e.clientX - mouse.lx) * 0.006;
+        camAngle.ph = Math.max(-0.4, Math.min(0.7, camAngle.ph + (e.clientY - mouse.ly) * 0.004));
+        mouse.lx = e.clientX; mouse.ly = e.clientY;
+      });
+      canvas.addEventListener('mouseup', () => { mouse.dn = false; });
+      canvas.addEventListener('mouseleave', () => { mouse.dn = false; });
+      canvas.addEventListener('wheel', e => {
+        camAngle.d = Math.max(12, Math.min(40, camAngle.d + e.deltaY * 0.015));
+      }, { passive: true });
+
+      // Touch
+      canvas.addEventListener('touchstart', e => {
+        if (e.touches[0]) mouse = { dn: true, lx: e.touches[0].clientX, ly: e.touches[0].clientY };
+      }, { passive: true });
+      canvas.addEventListener('touchmove', e => {
+        if (!mouse.dn || !e.touches[0]) return;
+        camAngle.th -= (e.touches[0].clientX - mouse.lx) * 0.006;
+        camAngle.ph = Math.max(-0.4, Math.min(0.7, camAngle.ph + (e.touches[0].clientY - mouse.ly) * 0.004));
+        mouse.lx = e.touches[0].clientX; mouse.ly = e.touches[0].clientY;
+      }, { passive: true });
+      canvas.addEventListener('touchend', () => { mouse.dn = false; });
+
+      // Resize
+      window.addEventListener('resize', () => {
+        const w = canvas.clientWidth;
+        const h = canvas.clientHeight;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      });
+    }
+
+    function clearScene() {
+      while (scene.children.length > 0) {
+        const obj = scene.children[0];
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          if (Array.isArray(obj.material)) obj.material.forEach(m => m.dispose());
+          else obj.material.dispose();
+        }
+        scene.remove(obj);
+      }
+    }
+
+    function rebuildScene() {
+      clearScene();
+      sceneData = buildNetworkScene(currentMethod);
+    }
+
+    // ═══════════════════════════════════════
+    // NETWORK BUILDER
+    // ═══════════════════════════════════════
+    function buildNetworkScene(method) {
+      const mc = new THREE.Color(method.color);
+      const ac = new THREE.Color(method.accent);
+      const isFull = method.id === 'full' || method.id === 'rlhf';
+      const isCompressed = method.id === 'qlora';
+
+      // Lights
+      scene.add(new THREE.AmbientLight(0x101828, 0.5));
+      const keyL = new THREE.DirectionalLight(0xddeeff, 0.3);
+      keyL.position.set(8, 10, 6); scene.add(keyL);
+      const pl1 = new THREE.PointLight(mc.getHex(), 1.5, 35);
+      pl1.position.set(0, 2, 8); scene.add(pl1);
+      const pl2 = new THREE.PointLight(ac.getHex(), 0.8, 25);
+      pl2.position.set(-6, -2, -4); scene.add(pl2);
+
+      // Network layout
+      const LAYERS = 6;
+      const NPerL = [4, 7, 8, 8, 7, 4];
+      const LSP = 4.0;
+      const startX = -(LAYERS - 1) * LSP / 2;
+
+      const allNodes = [];
+      const allEdges = [];
+      const extras = [];
+      const nodeGeo = new THREE.SphereGeometry(isCompressed ? 0.18 : 0.25, 16, 16);
+
+      // Nodes
+      const layerOffsets = [];
+      let idx = 0;
+      for (let L = 0; L < LAYERS; L++) {
+        layerOffsets.push(idx);
+        const N = NPerL[L];
+        const x = startX + L * LSP;
+        for (let i = 0; i < N; i++) {
+          const y = (i - (N - 1) / 2) * 1.3;
+          const z = (Math.sin(L * 2.1 + i * 1.7) * 0.7);
+          const mat = new THREE.MeshStandardMaterial({
+            color: isFull ? mc.clone().lerp(new THREE.Color(0xffffff), 0.2) : 0x1a2238,
+            emissive: isFull ? mc : new THREE.Color(0x060c18),
+            emissiveIntensity: isFull ? 0.3 : 0.05,
+            metalness: 0.6, roughness: 0.3,
+            transparent: true, opacity: isFull ? 0.9 : (isCompressed ? 0.25 : 0.4),
+          });
+          const node = new THREE.Mesh(nodeGeo, mat);
+          node.position.set(x, y, z);
+          scene.add(node);
+          allNodes.push({ pos: new THREE.Vector3(x, y, z), layer: L, idx: i, mesh: node, active: isFull });
+          idx++;
+        }
+      }
+
+      // Edges
+      for (let L = 0; L < LAYERS - 1; L++) {
+        const fStart = layerOffsets[L];
+        const fCount = NPerL[L];
+        const tStart = layerOffsets[L + 1];
+        const tCount = NPerL[L + 1];
+        for (let i = 0; i < fCount; i++) {
+          const targets = [];
+          for (let j = 0; j < tCount; j++) {
+            const dist = Math.abs(allNodes[fStart + i].pos.y - allNodes[tStart + j].pos.y);
+            if (dist < 2.5 && Math.random() > 0.3) targets.push(j);
+          }
+          if (!targets.length) targets.push(Math.floor(Math.random() * tCount));
+
+          for (const j of targets) {
+            const fNode = allNodes[fStart + i];
+            const tNode = allNodes[tStart + j];
+            const mid = new THREE.Vector3().addVectors(fNode.pos, tNode.pos).multiplyScalar(0.5);
+            mid.z += (Math.sin(i * 3.1 + j * 2.7) * 0.6);
+
+            const curve = new THREE.QuadraticBezierCurve3(fNode.pos, mid, tNode.pos);
+            const pts = curve.getPoints(20);
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = new THREE.LineBasicMaterial({
+              color: isFull ? mc : 0x111a2c,
+              transparent: true, opacity: isFull ? 0.25 : 0.08,
+            });
+            const line = new THREE.Line(geo, mat);
+            scene.add(line);
+            allEdges.push({ line, curve, layer: L });
+          }
+        }
+      }
+
+      // ── Method-specific ──
+      if (method.id === 'lora' || method.id === 'qlora') {
+        const bGeo = new THREE.SphereGeometry(0.18, 12, 12);
+        const bypassNodes = [];
+        for (let L = 1; L < LAYERS - 1; L++) {
+          const x = startX + L * LSP;
+          const offZ = 3.0;
+          for (let i = 0; i < 3; i++) {
+            const y = (i - 1) * 1.4;
+            const isA = L % 2 === 0;
+            const col = isA ? mc : ac;
+            const mat = new THREE.MeshStandardMaterial({
+              color: col, emissive: col, emissiveIntensity: 0.5,
+              metalness: 0.3, roughness: 0.3, transparent: true, opacity: 0.95,
+            });
+            const nd = new THREE.Mesh(bGeo, mat);
+            nd.position.set(x, y, offZ);
+            scene.add(nd);
+            bypassNodes.push({ pos: new THREE.Vector3(x, y, offZ), layer: L, idx: i, mesh: nd, isA });
+            extras.push({ mesh: nd, type: 'bypassNode', layer: L, idx: i });
+          }
+        }
+        // Connect bypass
+        for (let i = 0; i < bypassNodes.length; i++) {
+          for (let j = i + 1; j < bypassNodes.length; j++) {
+            if (Math.abs(bypassNodes[i].layer - bypassNodes[j].layer) === 1) {
+              const mid = new THREE.Vector3().addVectors(bypassNodes[i].pos, bypassNodes[j].pos).multiplyScalar(0.5);
+              mid.z += 0.5;
+              const curve = new THREE.QuadraticBezierCurve3(bypassNodes[i].pos, mid, bypassNodes[j].pos);
+              const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(12));
+              const mat = new THREE.LineBasicMaterial({ color: mc, transparent: true, opacity: 0.4 });
+              scene.add(new THREE.Line(geo, mat));
+              allEdges.push({ line: null, curve, layer: bypassNodes[i].layer });
+            }
+          }
+        }
+        // Merge connections
+        for (const bn of bypassNodes) {
+          const mStart = layerOffsets[bn.layer];
+          const mNode = allNodes[mStart + Math.min(bn.idx, NPerL[bn.layer] - 1)];
+          const geo = new THREE.BufferGeometry().setFromPoints([bn.pos, mNode.pos]);
+          scene.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: ac, transparent: true, opacity: 0.2 })));
+        }
+      }
+
+      if (method.id === 'prefix') {
+        const pGeo = new THREE.SphereGeometry(0.3, 20, 20);
+        const pX = startX - 3;
+        for (let i = 0; i < 6; i++) {
+          const angle = (i / 6) * Math.PI * 2;
+          const r = 1.5;
+          const mat = new THREE.MeshStandardMaterial({
+            color: mc, emissive: mc, emissiveIntensity: 0.6,
+            metalness: 0.2, roughness: 0.3, transparent: true, opacity: 0.95,
+          });
+          const orb = new THREE.Mesh(pGeo, mat);
+          orb.position.set(pX, Math.cos(angle) * r, Math.sin(angle) * r);
+          scene.add(orb);
+          extras.push({ mesh: orb, type: 'prefixNode', idx: i, angle, r, baseX: pX });
+
+          // Connections to first layer
+          for (let j = 0; j < Math.min(3, NPerL[0]); j++) {
+            const target = allNodes[j];
+            const mid2 = new THREE.Vector3().addVectors(orb.position, target.pos).multiplyScalar(0.5);
+            mid2.z += (Math.random() - 0.5);
+            const curve = new THREE.QuadraticBezierCurve3(orb.position.clone(), mid2, target.pos);
+            const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(16));
+            scene.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: mc, transparent: true, opacity: 0.2 })));
+          }
+        }
+      }
+
+      if (method.id === 'adapters') {
+        const aGeo = new THREE.SphereGeometry(0.22, 14, 14);
+        for (let L = 1; L < LAYERS - 1; L += 2) {
+          const x = startX + L * LSP + LSP / 2;
+          for (let i = 0; i < 2; i++) {
+            const y = (i - 0.5) * 1.0;
+            const mat = new THREE.MeshStandardMaterial({
+              color: mc, emissive: mc, emissiveIntensity: 0.5,
+              metalness: 0.3, roughness: 0.3, transparent: true, opacity: 0.95,
+            });
+            const nd = new THREE.Mesh(aGeo, mat);
+            nd.position.set(x, y, 0);
+            scene.add(nd);
+            extras.push({ mesh: nd, type: 'adapterNode', layer: L, idx: i });
+
+            // Connect
+            const fS = layerOffsets[L];
+            const tS = layerOffsets[L + 1];
+            for (let k = 0; k < 3; k++) {
+              const fi = Math.min(k + i, NPerL[L] - 1);
+              const ti = Math.min(k + i, NPerL[L + 1] - 1);
+              const fg = new THREE.BufferGeometry().setFromPoints([allNodes[fS + fi].pos, new THREE.Vector3(x, y, 0)]);
+              scene.add(new THREE.Line(fg, new THREE.LineBasicMaterial({ color: mc, transparent: true, opacity: 0.3 })));
+              const tg = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x, y, 0), allNodes[tS + ti].pos]);
+              scene.add(new THREE.Line(tg, new THREE.LineBasicMaterial({ color: ac, transparent: true, opacity: 0.3 })));
+            }
+          }
+        }
+      }
+
+      if (method.id === 'rlhf') {
+        const sg = new THREE.SphereGeometry(0.6, 24, 24);
+        const pMat = new THREE.MeshStandardMaterial({
+          color: 0x22c55e, emissive: new THREE.Color(0x22c55e), emissiveIntensity: 0.4,
+          metalness: 0.2, roughness: 0.4, transparent: true, opacity: 0.85,
+        });
+        const pref = new THREE.Mesh(sg, pMat);
+        pref.position.set(startX + (LAYERS - 1) * LSP + 3, 2, 0);
+        scene.add(pref);
+        extras.push({ mesh: pref, type: 'preferred' });
+
+        const rMat = new THREE.MeshStandardMaterial({
+          color: 0xef4444, emissive: new THREE.Color(0xef4444), emissiveIntensity: 0.25,
+          metalness: 0.2, roughness: 0.5, transparent: true, opacity: 0.6,
+        });
+        const rej = new THREE.Mesh(sg, rMat);
+        rej.position.set(startX + (LAYERS - 1) * LSP + 3, -2, 0);
+        scene.add(rej);
+        extras.push({ mesh: rej, type: 'rejected' });
+      }
+
+      // ── Flow particles ──
+      const flowEdges = allEdges.filter(e => e.curve);
+      const flowPts = createFlowParticles(flowEdges, method.color, isFull ? 400 : 200);
+
+      // ── Ambient dust ──
+      const dust = createDustParticles(method.accent, 60, 25);
+
+      return { allNodes, allEdges, extras, pl1, pl2, flowPts, flowEdges, dust };
+    }
+
+    function createFlowParticles(edges, color, count) {
+      if (!edges.length) return null;
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      const meta = [];
+      for (let i = 0; i < count; i++) {
+        const ei = Math.floor(Math.random() * edges.length);
+        const t = Math.random();
+        const p = edges[ei].curve.getPoint(t);
+        pos[i * 3] = p.x; pos[i * 3 + 1] = p.y; pos[i * 3 + 2] = p.z;
+        meta.push({ ei, t });
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const mat = new THREE.PointsMaterial({
+        color: new THREE.Color(color), size: 0.1,
+        transparent: true, opacity: 0.75,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      const pts = new THREE.Points(geo, mat);
+      pts.userData = { meta, edges };
+      scene.add(pts);
+      return pts;
+    }
+
+    function createDustParticles(color, count, spread) {
+      const geo = new THREE.BufferGeometry();
+      const pos = new Float32Array(count * 3);
+      for (let i = 0; i < count; i++) {
+        pos[i * 3] = (Math.random() - 0.5) * spread;
+        pos[i * 3 + 1] = (Math.random() - 0.5) * spread * 0.6;
+        pos[i * 3 + 2] = (Math.random() - 0.5) * spread * 0.6;
+      }
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const mat = new THREE.PointsMaterial({
+        color: new THREE.Color(color), size: 0.04,
+        transparent: true, opacity: 0.15,
+        blending: THREE.AdditiveBlending, depthWrite: false,
+      });
+      const pts = new THREE.Points(geo, mat);
+      scene.add(pts);
+      return pts;
+    }
+
+    // ═══════════════════════════════════════
+    // ANIMATION LOOP
+    // ═══════════════════════════════════════
+    function animate() {
+      requestAnimationFrame(animate);
+      if (!sceneData) return;
+
+      const t = performance.now() / 1000;
+
+      // Camera orbit
+      if (!mouse.dn) camAngle.th += 0.0015;
+      camera.position.x = Math.sin(camAngle.th) * Math.cos(camAngle.ph) * camAngle.d;
+      camera.position.y = Math.sin(camAngle.ph) * camAngle.d * 0.3 + 1.5;
+      camera.position.z = Math.cos(camAngle.th) * Math.cos(camAngle.ph) * camAngle.d;
+      camera.lookAt(0, 0, 0);
+
+      // Lights
+      if (sceneData.pl1) {
+        sceneData.pl1.position.x = Math.sin(t * 0.4) * 6;
+        sceneData.pl1.position.z = 8 + Math.sin(t * 0.5) * 3;
+        sceneData.pl1.intensity = 1.2 + Math.sin(t * 1.5) * 0.4;
+      }
+      if (sceneData.pl2) {
+        sceneData.pl2.position.y = -2 + Math.sin(t * 0.3) * 2;
+      }
+
+      // Animate nodes
+      sceneData.allNodes.forEach(n => {
+        if (n.active) {
+          n.mesh.material.emissiveIntensity = Math.sin(t * 2.5 + n.layer * 0.8 + n.idx * 0.5) * 0.15 + 0.35;
+          n.mesh.scale.setScalar(1 + Math.sin(t * 3 + n.layer + n.idx) * 0.08);
+        }
+      });
+
+      // Animate extras
+      sceneData.extras.forEach(e => {
+        if (e.type === 'bypassNode') {
+          e.mesh.material.emissiveIntensity = Math.sin(t * 3 + e.layer + e.idx * 1.2) * 0.3 + 0.55;
+          e.mesh.scale.setScalar(1 + Math.sin(t * 2.5 + e.idx) * 0.12);
+        }
+        if (e.type === 'prefixNode') {
+          const a = e.angle + t * 0.4;
+          e.mesh.position.set(e.baseX + Math.cos(a) * 0.3, Math.cos(a) * e.r, Math.sin(a) * e.r);
+          e.mesh.material.emissiveIntensity = Math.sin(t * 2 + e.idx * 0.9) * 0.3 + 0.65;
+          e.mesh.scale.setScalar(1 + Math.sin(t * 3 + e.idx) * 0.2);
+        }
+        if (e.type === 'adapterNode') {
+          e.mesh.material.emissiveIntensity = Math.sin(t * 3.5 + e.layer * 2 + e.idx) * 0.3 + 0.55;
+          e.mesh.scale.setScalar(1 + Math.sin(t * 2.5 + e.layer) * 0.15);
+        }
+        if (e.type === 'preferred') {
+          e.mesh.scale.setScalar(1 + Math.sin(t * 1.2) * 0.12);
+          e.mesh.material.emissiveIntensity = 0.3 + Math.sin(t * 2) * 0.2;
+        }
+        if (e.type === 'rejected') {
+          e.mesh.scale.setScalar(1 - Math.sin(t * 1.2) * 0.06);
+          e.mesh.material.opacity = 0.4 + Math.sin(t) * 0.1;
+        }
+      });
+
+      // Flow particles
+      if (sceneData.flowPts) {
+        const fp = sceneData.flowPts;
+        const { meta, edges } = fp.userData;
+        const pos = fp.geometry.attributes.position;
+        for (let i = 0; i < meta.length; i++) {
+          meta[i].t += 0.006 + Math.random() * 0.002;
+          if (meta[i].t > 1) { meta[i].t = 0; meta[i].ei = Math.floor(Math.random() * edges.length); }
+          const p = edges[meta[i].ei].curve.getPoint(meta[i].t);
+          pos.setXYZ(i, p.x + (Math.random() - 0.5) * 0.05, p.y + (Math.random() - 0.5) * 0.05, p.z + (Math.random() - 0.5) * 0.05);
+        }
+        pos.needsUpdate = true;
+      }
+
+      // Dust
+      if (sceneData.dust) {
+        const dp = sceneData.dust.geometry.attributes.position;
+        for (let i = 0; i < dp.count; i++) {
+          dp.setX(i, dp.getX(i) + Math.sin(t * 0.3 + i) * 0.002);
+          dp.setY(i, dp.getY(i) + Math.cos(t * 0.2 + i * 0.5) * 0.002);
+          if (Math.abs(dp.getX(i)) > 12) dp.setX(i, -dp.getX(i) * 0.8);
+          if (Math.abs(dp.getY(i)) > 8) dp.setY(i, -dp.getY(i) * 0.8);
+        }
+        dp.needsUpdate = true;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // ═══════════════════════════════════════
+    // INIT
+    // ═══════════════════════════════════════
+    window.addEventListener('DOMContentLoaded', () => {
+      initThree();
+      setupUI();
+      animate();
+    });
+  </script>
+</body>
+</html>
