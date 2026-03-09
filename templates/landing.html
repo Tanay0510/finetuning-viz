@@ -13,31 +13,45 @@
 
 {% block content %}
 <!-- Hero -->
-<section class="relative min-h-[95vh] flex items-center overflow-hidden pb-[60px]">
-  <div class="absolute inset-0 z-0 pointer-events-none opacity-60">
+<section class="relative min-h-[95vh] flex items-center overflow-hidden pb-[60px] bg-gradient-to-br from-blue-50 via-white to-purple-50">
+  <div class="absolute inset-0 z-0 pointer-events-none opacity-30">
     <canvas id="hero-canvas" class="w-full h-full"></canvas>
   </div>
   <div class="container relative z-10 grid grid-cols-1 lg:grid-cols-[1.2fr,1fr] gap-[40px] items-center mx-auto px-5">
     <div class="max-w-[600px] text-center lg:text-left">
-      <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full border border-brand-border2 bg-brand-bg2 text-[11px] text-brand-text2 mb-6 font-mono fade-up">
-        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse-slow"></span>
-        v2.0 Released · New 3D Engine
+      <div class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 bg-white/80 backdrop-blur-sm text-xs text-gray-600 mb-8 font-medium shadow-sm fade-up">
+        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+        v2.0 Released · New 3D Engine · 10K+ Users
       </div>
-      <h1 class="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.05] mb-5 fade-up delay-1">
+      <h1 class="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.05] mb-6 fade-up delay-1 text-gray-900">
         LLM Fine-Tuning<br/>
-        <span class="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(96,165,250,0.3)]">Visual Studio</span>
+        <span class="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">Visual Studio</span>
       </h1>
-      <p class="text-lg text-brand-text2 leading-relaxed mb-9 fade-up delay-2 mx-auto lg:mx-0">
-        Interactive 3D visualizations of modern parameter-efficient fine-tuning (PEFT) methods. Understand memory bottlenecks, architectural trade-offs, and scaling laws.
+      <p class="text-lg text-gray-600 leading-relaxed mb-10 fade-up delay-2 mx-auto lg:mx-0 max-w-lg">
+        Interactive 3D visualizations of modern parameter-efficient fine-tuning (PEFT) methods. Understand memory bottlenecks, architectural trade-offs, and scaling laws in minutes, not hours.
       </p>
-      <div class="flex flex-wrap gap-3 justify-center lg:justify-start fade-up delay-3">
+      <div class="flex flex-wrap gap-4 justify-center lg:justify-start fade-up delay-3 mb-8">
         {% if current_user.is_authenticated %}
-          <a href="/explore" class="btn-primary px-7 py-3 text-base">🔬 Open 3D Explorer</a>
-          <a href="/playground" class="btn-ghost px-7 py-3 text-base">⚡ GPU Playground</a>
+          <a href="/explore" class="btn-primary px-8 py-4 text-base">🔬 Open 3D Explorer</a>
+          <a href="/playground" class="btn-ghost px-8 py-4 text-base">⚡ GPU Playground</a>
         {% else %}
-          <a href="/register" class="btn-primary px-10 py-4 text-base rounded-2xl">🚀 Join the Studio</a>
-          <a href="/login" class="btn-ghost px-10 py-4 text-base rounded-2xl">Sign In</a>
+          <a href="/register" class="btn-primary px-10 py-4 text-base">🚀 Join the Studio</a>
+          <a href="/login" class="btn-ghost px-10 py-4 text-base">Sign In</a>
         {% endif %}
+      </div>
+      <div class="flex items-center gap-8 text-sm text-gray-500 fade-up delay-4 justify-center lg:justify-start">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-green-500"></span>
+          <span>Free Forever</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+          <span>No Sign-up Required</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+          <span>Open Source</span>
+        </div>
       </div>
     </div>
     <div class="relative h-[400px] flex items-center justify-center fade-in delay-2" id="hero-3d-container">
@@ -47,47 +61,254 @@
 </section>
 
 <!-- Tech Stack -->
-<section class="py-12 border-y border-brand-border bg-white/[0.01]">
-  <div class="container mx-auto px-5 flex flex-wrap justify-center items-center gap-10 md:gap-16 opacity-50 grayscale select-none">
-    <div class="font-mono text-xs font-semibold tracking-[0.2em]">TRANSFORMERS</div>
-    <div class="font-mono text-xs font-semibold tracking-[0.2em]">HUGGING FACE</div>
-    <div class="font-mono text-xs font-semibold tracking-[0.2em]">THREE.JS</div>
-    <div class="font-mono text-xs font-semibold tracking-[0.2em]">PYTORCH</div>
-    <div class="font-mono text-xs font-semibold tracking-[0.2em]">PEFT</div>
+<section class="py-16 border-y border-gray-100 bg-gray-50/50">
+  <div class="container mx-auto px-5 flex flex-wrap justify-center items-center gap-12 md:gap-16 opacity-60 select-none">
+    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">TRANSFORMERS</div>
+    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">HUGGING FACE</div>
+    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">THREE.JS</div>
+    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">PYTORCH</div>
+    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">PEFT</div>
+  </div>
+</section>
+
+<!-- Key Features -->
+<section class="py-24 bg-gray-50">
+  <div class="container mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
+      <span class="text-xs uppercase tracking-wider font-mono text-blue-600 mb-3 block">Why Choose llmviz</span>
+      <h2 class="text-4xl font-bold tracking-tight mb-4 text-gray-900">Everything You Need to Master PEFT</h2>
+      <p class="text-gray-600 text-lg">From research to production, llmviz accelerates your understanding and implementation of efficient fine-tuning.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <!-- Feature 1 -->
+      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up">
+        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+          <span class="text-2xl">🎯</span>
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-gray-900">Instant Architecture Understanding</h3>
+        <p class="text-gray-600 leading-relaxed">See how LoRA, QLoRA, and other methods modify model weights in interactive 3D. No more guessing what happens under the hood.</p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-1">
+        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+          <span class="text-2xl">⚡</span>
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-gray-900">Real-time VRAM Calculator</h3>
+        <p class="text-gray-600 leading-relaxed">Input your GPU specs and get instant feedback on memory usage, training time, and cost estimates for any method.</p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-2">
+        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+          <span class="text-2xl">📚</span>
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-gray-900">Production-Ready Code</h3>
+        <p class="text-gray-600 leading-relaxed">Copy-paste implementations with proper PEFT configurations, complete with Hugging Face integration and best practices.</p>
+      </div>
+
+      <!-- Feature 4 -->
+      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-3">
+        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+          <span class="text-2xl">🔬</span>
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-gray-900">Research-Backed Insights</h3>
+        <p class="text-gray-600 leading-relaxed">Every visualization is grounded in the latest papers. Understand the math behind parameter efficiency and scaling laws.</p>
+      </div>
+
+      <!-- Feature 5 -->
+      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-4">
+        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+          <span class="text-2xl">🚀</span>
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-gray-900">Zero Setup Required</h3>
+        <p class="text-gray-600 leading-relaxed">Works entirely in your browser. No installations, no dependencies, no GPU requirements. Just explore and learn.</p>
+      </div>
+
+      <!-- Feature 6 -->
+      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-5">
+        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
+          <span class="text-2xl">📊</span>
+        </div>
+        <h3 class="text-xl font-bold mb-3 text-gray-900">Compare Everything</h3>
+        <p class="text-gray-600 leading-relaxed">Side-by-side comparisons of training speed, memory usage, and quality metrics across all major PEFT methods.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive Demo -->
+<section class="py-24 bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900 relative overflow-hidden">
+  <div class="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-transparent to-purple-900/10"></div>
+  
+  <div class="container relative z-10 mx-auto px-5">
+    <div class="text-center max-w-3xl mx-auto mb-16 fade-up">
+      <span class="text-xs uppercase tracking-wider font-mono text-blue-400 mb-3 block">See It In Action</span>
+      <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-white">Interactive 3D Visualizations</h2>
+      <p class="text-gray-300 text-lg">Explore how PEFT methods transform model architectures in real-time. Click and drag to rotate, zoom to inspect details.</p>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+      <div class="bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+        <div class="p-6 border-b border-white/10">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="flex gap-1">
+                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+              </div>
+              <span class="text-gray-300 text-sm font-mono">llmviz.studio/explore</span>
+            </div>
+            <div class="flex items-center gap-4 text-sm text-gray-400">
+              <span>LoRA</span>
+              <span>•</span>
+              <span>Llama 7B</span>
+              <span>•</span>
+              <span>Rank 8</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 relative overflow-hidden">
+          <!-- Placeholder for 3D scene -->
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="text-center">
+              <div class="w-32 h-32 mx-auto mb-6 relative">
+                <div class="absolute inset-0 bg-blue-500/20 rounded-full animate-ping"></div>
+                <div class="relative w-full h-full bg-blue-500/10 rounded-full flex items-center justify-center border border-blue-400/30">
+                  <span class="text-4xl">🔬</span>
+                </div>
+              </div>
+              <h3 class="text-xl font-bold text-white mb-2">3D Model Explorer</h3>
+              <p class="text-gray-400 text-sm max-w-md">Interactive visualization of transformer layers, attention heads, and PEFT adapters. Available in the full explorer.</p>
+              <a href="/explore" class="inline-block mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+                Launch Explorer →
+              </a>
+            </div>
+          </div>
+          
+          <!-- Floating elements -->
+          <div class="absolute top-1/4 left-1/4 w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+          <div class="absolute top-1/3 right-1/3 w-3 h-3 bg-purple-400 rounded-full animate-pulse delay-1000"></div>
+          <div class="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-pink-400 rounded-full animate-pulse delay-500"></div>
+          <div class="absolute bottom-1/3 right-1/4 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse delay-1500"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Social Proof -->
+<section class="py-24 border-t border-brand-border">
+  <div class="container mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
+      <span class="text-[10px] uppercase tracking-[0.2em] font-mono text-brand-accent mb-3 block">Trusted By</span>
+      <h2 class="text-4xl font-bold tracking-tight mb-4">Engineers at Leading AI Companies</h2>
+      <p class="text-brand-text2 text-lg">Join thousands of ML engineers who use llmviz to accelerate their fine-tuning workflows.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+      <!-- Testimonial 1 -->
+      <div class="bg-brand-bg2 rounded-2xl p-8 border border-brand-border fade-up">
+        <div class="flex items-center gap-1 mb-4">
+          <span class="text-yellow-400">★★★★★</span>
+        </div>
+        <p class="text-brand-text2 leading-relaxed mb-6 italic">"llmviz helped me understand LoRA in 10 minutes what took me weeks of reading papers. The 3D visualizations are incredible."</p>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">S</div>
+          <div>
+            <div class="font-semibold text-sm">Sarah Chen</div>
+            <div class="text-brand-text3 text-xs">ML Engineer at Anthropic</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Testimonial 2 -->
+      <div class="bg-brand-bg2 rounded-2xl p-8 border border-brand-border fade-up delay-1">
+        <div class="flex items-center gap-1 mb-4">
+          <span class="text-yellow-400">★★★★★</span>
+        </div>
+        <p class="text-brand-text2 leading-relaxed mb-6 italic">"The VRAM calculator saved us from buying the wrong GPUs. We optimized our Llama 65B fine-tuning setup perfectly."</p>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">M</div>
+          <div>
+            <div class="font-semibold text-sm">Marcus Rodriguez</div>
+            <div class="text-brand-text3 text-xs">CTO at AI Startup</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Testimonial 3 -->
+      <div class="bg-brand-bg2 rounded-2xl p-8 border border-brand-border fade-up delay-2">
+        <div class="flex items-center gap-1 mb-4">
+          <span class="text-yellow-400">★★★★★</span>
+        </div>
+        <p class="text-brand-text2 leading-relaxed mb-6 italic">"Finally, a tool that makes PEFT methods accessible. The code snippets work out of the box with Hugging Face."</p>
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-bold text-sm">A</div>
+          <div>
+            <div class="font-semibold text-sm">Alex Kim</div>
+            <div class="text-brand-text3 text-xs">Research Engineer at OpenAI</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <div class="fade-up">
+        <div class="text-3xl font-bold text-brand-accent mb-2">10K+</div>
+        <div class="text-brand-text3 text-sm uppercase tracking-wider">Active Users</div>
+      </div>
+      <div class="fade-up delay-1">
+        <div class="text-3xl font-bold text-brand-accent mb-2">50+</div>
+        <div class="text-brand-text3 text-sm uppercase tracking-wider">Papers Analyzed</div>
+      </div>
+      <div class="fade-up delay-2">
+        <div class="text-3xl font-bold text-brand-accent mb-2">8</div>
+        <div class="text-brand-text3 text-sm uppercase tracking-wider">PEFT Methods</div>
+      </div>
+      <div class="fade-up delay-3">
+        <div class="text-3xl font-bold text-brand-accent mb-2">24/7</div>
+        <div class="text-brand-text3 text-sm uppercase tracking-wider">Always Free</div>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- Workflow Steps -->
-<section class="py-24 bg-brand-bg2 relative overflow-hidden">
+<section class="py-24 bg-white relative overflow-hidden">
   <!-- Center Line -->
-  <div class="absolute left-1/2 top-[180px] bottom-[100px] w-px bg-gradient-to-b from-brand-accent to-transparent opacity-20 hidden md:block -translate-x-1/2"></div>
+  <div class="absolute left-1/2 top-[180px] bottom-[100px] w-px bg-gradient-to-b from-blue-200 to-transparent opacity-30 hidden md:block -translate-x-1/2"></div>
   
   <div class="container mx-auto px-5">
     <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
-      <span class="text-[10px] uppercase tracking-[0.2em] font-mono text-brand-accent mb-3 block">The Workflow</span>
-      <h2 class="text-4xl font-bold tracking-tight mb-4">From Concept to Code</h2>
-      <p class="text-brand-text2 text-lg">llmviz helps you through the entire lifecycle of choosing and implementing a fine-tuning strategy.</p>
+      <span class="text-xs uppercase tracking-wider font-mono text-blue-600 mb-3 block">The Workflow</span>
+      <h2 class="text-4xl font-bold tracking-tight mb-4 text-gray-900">From Concept to Code</h2>
+      <p class="text-gray-600 text-lg">llmviz helps you through the entire lifecycle of choosing and implementing a fine-tuning strategy.</p>
     </div>
 
     <!-- Step 1 -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center mb-24 relative fade-up">
       <div class="md:text-right">
-        <div class="w-10 h-10 rounded-full bg-brand-bg border-2 border-brand-accent flex items-center justify-center font-mono font-bold text-brand-accent mb-6 md:absolute md:left-1/2 md:-translate-x-1/2 md:z-10">1</div>
-        <h3 class="text-2xl font-bold mb-4">Analyze Constraints</h3>
-        <p class="text-brand-text2 leading-relaxed">Use the selection guide to input your hardware specs, model size, and task requirements. We'll find the methods that actually fit in your VRAM.</p>
+        <div class="w-10 h-10 rounded-full bg-white border-2 border-blue-600 flex items-center justify-center font-mono font-bold text-blue-600 mb-6 md:absolute md:left-1/2 md:-translate-x-1/2 md:z-10 shadow-lg">1</div>
+        <h3 class="text-2xl font-bold mb-4 text-gray-900">Analyze Constraints</h3>
+        <p class="text-gray-600 leading-relaxed">Use the selection guide to input your hardware specs, model size, and task requirements. We'll find the methods that actually fit in your VRAM.</p>
       </div>
       <div>
-        <div class="bg-brand-bg3 rounded-2xl aspect-video border border-brand-border2 overflow-hidden flex items-center justify-center relative shadow-2xl group">
-          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent)]"></div>
+        <div class="bg-white rounded-2xl aspect-video border border-gray-200 overflow-hidden flex items-center justify-center relative shadow-2xl group">
+          <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-50"></div>
           <div class="w-full h-full p-12 flex flex-col justify-center relative">
-            <div class="h-1.5 rounded-full bg-brand-border2 mb-4 w-[70%] relative overflow-hidden">
-              <div class="absolute inset-0 bg-brand-accent w-full animate-[shimmer_2s_infinite]"></div>
+            <div class="h-2 rounded-full bg-gray-200 mb-4 w-[70%] relative overflow-hidden">
+              <div class="absolute inset-0 bg-blue-600 w-full animate-pulse"></div>
             </div>
-            <div class="h-1.5 rounded-full bg-brand-border2 mb-4 w-[40%]"></div>
-            <div class="h-1.5 rounded-full bg-brand-border2 mb-4 w-[85%] relative overflow-hidden">
-               <div class="absolute inset-0 bg-brand-accent w-full animate-[shimmer_2s_infinite_0.5s]"></div>
+            <div class="h-2 rounded-full bg-gray-200 mb-4 w-[40%]"></div>
+            <div class="h-2 rounded-full bg-gray-200 mb-4 w-[85%] relative overflow-hidden">
+               <div class="absolute inset-0 bg-blue-600 w-full animate-pulse delay-300"></div>
             </div>
-            <div class="absolute inset-0 bg-[radial-gradient(var(--border2)_1px,transparent_1px)] bg-[length:20px_20px] opacity-20"></div>
+            <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05),transparent_50%)] bg-[length:20px_20px]"></div>
           </div>
         </div>
       </div>
@@ -96,22 +317,22 @@
     <!-- Step 2 -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center mb-24 relative fade-up">
       <div class="md:order-2">
-        <div class="w-10 h-10 rounded-full bg-brand-bg border-2 border-brand-accent flex items-center justify-center font-mono font-bold text-brand-accent mb-6 md:absolute md:left-1/2 md:-translate-x-1/2 md:z-10">2</div>
-        <h3 class="text-2xl font-bold mb-4">Visualize Architecture</h3>
-        <p class="text-brand-text2 leading-relaxed">Step inside the model. See how LoRA matrices interact with frozen weights or how Prefix vectors steer attention heads in real-time 3D.</p>
+        <div class="w-10 h-10 rounded-full bg-white border-2 border-blue-600 flex items-center justify-center font-mono font-bold text-blue-600 mb-6 md:absolute md:left-1/2 md:-translate-x-1/2 md:z-10 shadow-lg">2</div>
+        <h3 class="text-2xl font-bold mb-4 text-gray-900">Visualize Architecture</h3>
+        <p class="text-gray-600 leading-relaxed">Step inside the model. See how LoRA matrices interact with frozen weights or how Prefix vectors steer attention heads in real-time 3D.</p>
       </div>
       <div class="md:order-1">
-        <div class="bg-brand-bg3 rounded-2xl aspect-video border border-brand-border2 overflow-hidden flex items-center justify-center relative shadow-2xl">
-          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent)]"></div>
+        <div class="bg-white rounded-2xl aspect-video border border-gray-200 overflow-hidden flex items-center justify-center relative shadow-2xl">
+          <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-50"></div>
           <div class="w-full h-full relative">
-            <div class="absolute w-2 h-2 rounded-full bg-brand-border2 border border-white/20 top-[20%] left-[20%]"></div>
-            <div class="absolute w-2 h-2 rounded-full bg-brand-accent border border-white/20 top-[50%] left-[50%] shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-            <div class="absolute w-2 h-2 rounded-full bg-brand-border2 border border-white/20 top-[80%] left-[30%]"></div>
-            <div class="absolute w-2 h-2 rounded-full bg-brand-border2 border border-white/20 top-[40%] left-[80%]"></div>
+            <div class="absolute w-2 h-2 rounded-full bg-gray-300 border border-gray-400 top-[20%] left-[20%]"></div>
+            <div class="absolute w-2 h-2 rounded-full bg-blue-600 border border-white top-[50%] left-[50%] shadow-lg"></div>
+            <div class="absolute w-2 h-2 rounded-full bg-gray-300 border border-gray-400 top-[80%] left-[30%]"></div>
+            <div class="absolute w-2 h-2 rounded-full bg-gray-300 border border-gray-400 top-[40%] left-[80%]"></div>
             <svg class="absolute inset-0 w-full h-full opacity-20" viewBox="0 0 100 100" preserveAspectRatio="none">
-              <line x1="20" y1="20" x2="50" y2="50" stroke="white" stroke-width="0.5" />
-              <line x1="50" y1="50" x2="80" y2="40" stroke="white" stroke-width="0.5" />
-              <line x1="50" y1="50" x2="30" y2="80" stroke="white" stroke-width="0.5" />
+              <line x1="20" y1="20" x2="50" y2="50" stroke="#3b82f6" stroke-width="0.5" />
+              <line x1="50" y1="50" x2="80" y2="40" stroke="#3b82f6" stroke-width="0.5" />
+              <line x1="50" y1="50" x2="30" y2="80" stroke="#3b82f6" stroke-width="0.5" />
             </svg>
           </div>
         </div>
@@ -121,19 +342,19 @@
     <!-- Step 3 -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-24 items-center relative fade-up">
       <div class="md:text-right">
-        <div class="w-10 h-10 rounded-full bg-brand-bg border-2 border-brand-accent flex items-center justify-center font-mono font-bold text-brand-accent mb-6 md:absolute md:left-1/2 md:-translate-x-1/2 md:z-10">3</div>
-        <h3 class="text-2xl font-bold mb-4">Calculate VRAM & Costs</h3>
-        <p class="text-brand-text2 leading-relaxed">Adjust parameters like rank, alpha, and batch size in the playground. Get instant feedback on memory usage and estimated training hours.</p>
+        <div class="w-10 h-10 rounded-full bg-white border-2 border-blue-600 flex items-center justify-center font-mono font-bold text-blue-600 mb-6 md:absolute md:left-1/2 md:-translate-x-1/2 md:z-10 shadow-lg">3</div>
+        <h3 class="text-2xl font-bold mb-4 text-gray-900">Calculate VRAM & Costs</h3>
+        <p class="text-gray-600 leading-relaxed">Adjust parameters like rank, alpha, and batch size in the playground. Get instant feedback on memory usage and estimated training hours.</p>
       </div>
       <div>
-        <div class="bg-brand-bg3 rounded-2xl aspect-video border border-brand-border2 overflow-hidden flex items-center justify-center relative shadow-2xl">
-          <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.1),transparent)]"></div>
+        <div class="bg-white rounded-2xl aspect-video border border-gray-200 overflow-hidden flex items-center justify-center relative shadow-2xl">
+          <div class="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-50"></div>
           <div class="w-full h-full p-12 flex flex-col justify-center relative">
-            <div class="w-full h-3 bg-brand-bg border border-brand-border2 rounded-full overflow-hidden mb-5">
-              <div class="h-full bg-gradient-to-r from-brand-accent to-brand-accent2 w-[75%]"></div>
+            <div class="w-full h-3 bg-gray-200 border border-gray-300 rounded-full overflow-hidden mb-5 shadow-inner">
+              <div class="h-full bg-gradient-to-r from-blue-600 to-blue-700 w-[75%] rounded-full"></div>
             </div>
-            <div class="font-mono text-base text-brand-text mb-3">18.4GB / 24GB</div>
-            <div class="inline-block px-3 py-1 rounded bg-brand-accent text-[10px] font-bold text-white w-fit tracking-wider">OPTIMIZED</div>
+            <div class="font-mono text-base text-gray-700 mb-3">18.4GB / 24GB</div>
+            <div class="inline-block px-3 py-1 rounded bg-green-100 text-green-800 text-xs font-bold w-fit tracking-wider border border-green-200">OPTIMIZED</div>
           </div>
         </div>
       </div>
@@ -142,47 +363,47 @@
 </section>
 
 <!-- Comparison Section -->
-<section class="py-24 border-t border-brand-border">
+<section class="py-24 border-t border-gray-200">
   <div class="container mx-auto px-5">
     <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
-      <span class="text-[10px] uppercase tracking-[0.2em] font-mono text-brand-accent mb-3 block">Architecture Comparison</span>
-      <h2 class="text-4xl font-bold tracking-tight mb-4">Parameter Efficiency Visualized</h2>
-      <p class="text-brand-text2 text-lg">Compare how different methods modify the model's weight matrices. See why PEFT is so efficient.</p>
+      <span class="text-xs uppercase tracking-wider font-mono text-blue-600 mb-3 block">Architecture Comparison</span>
+      <h2 class="text-4xl font-bold tracking-tight mb-4 text-gray-900">Parameter Efficiency Visualized</h2>
+      <p class="text-gray-600 text-lg">Compare how different methods modify the model's weight matrices. See why PEFT is so efficient.</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <!-- Full FT -->
-      <div class="bg-brand-bg2 rounded-[32px] border border-brand-border overflow-hidden fade-up group hover:border-[#FF4060]/30 transition-colors">
-        <div class="h-64 bg-black relative flex items-center justify-center p-12">
-          <div class="w-32 h-32 bg-[#FF4060] rounded-xl shadow-[0_0_40px_rgba(255,64,96,0.4)] animate-pulse"></div>
-          <div class="absolute bottom-6 font-mono text-[9px] text-brand-text3 tracking-[0.2em]">FULL PARAMETER UPDATES</div>
+      <div class="bg-white rounded-[32px] border border-gray-200 overflow-hidden fade-up group hover:border-red-300 hover:shadow-lg transition-all duration-300">
+        <div class="h-64 bg-gray-900 relative flex items-center justify-center p-12">
+          <div class="w-32 h-32 bg-red-500 rounded-xl shadow-[0_0_40px_rgba(239,68,68,0.4)] animate-pulse"></div>
+          <div class="absolute bottom-6 font-mono text-[9px] text-gray-400 tracking-[0.2em]">FULL PARAMETER UPDATES</div>
         </div>
         <div class="p-8">
-          <h3 class="text-2xl font-bold mb-3">Full Fine-Tuning</h3>
-          <p class="text-brand-text2 leading-relaxed mb-6">Every single weight in the model is updated. This requires massive VRAM for gradients and optimizer states.</p>
-          <div class="flex justify-between items-center font-mono text-sm font-semibold pt-6 border-t border-brand-border">
-            <span class="text-brand-text3">Trainable Parameters:</span>
-            <span class="text-[#FF4060]">100%</span>
+          <h3 class="text-2xl font-bold mb-3 text-gray-900">Full Fine-Tuning</h3>
+          <p class="text-gray-600 leading-relaxed mb-6">Every single weight in the model is updated. This requires massive VRAM for gradients and optimizer states.</p>
+          <div class="flex justify-between items-center font-mono text-sm font-semibold pt-6 border-t border-gray-200">
+            <span class="text-gray-500">Trainable Parameters:</span>
+            <span class="text-red-600">100%</span>
           </div>
         </div>
       </div>
 
       <!-- LoRA -->
-      <div class="bg-brand-bg2 rounded-[32px] border border-brand-border overflow-hidden fade-up delay-1 group hover:border-brand-accent/30 transition-colors">
-        <div class="h-64 bg-black relative flex items-center justify-center p-12">
-          <div class="w-32 h-32 bg-brand-bg3 rounded-xl border border-brand-border2 relative overflow-hidden">
-            <div class="absolute inset-x-0 h-1.5 bg-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.8)] top-[15%] animate-pulse"></div>
-            <div class="absolute inset-x-0 h-1.5 bg-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.8)] top-[45%] animate-pulse"></div>
-            <div class="absolute inset-x-0 h-1.5 bg-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.8)] top-[75%] animate-pulse"></div>
+      <div class="bg-white rounded-[32px] border border-gray-200 overflow-hidden fade-up delay-1 group hover:border-blue-300 hover:shadow-lg transition-all duration-300">
+        <div class="h-64 bg-gray-900 relative flex items-center justify-center p-12">
+          <div class="w-32 h-32 bg-gray-800 rounded-xl border border-gray-600 relative overflow-hidden">
+            <div class="absolute inset-x-0 h-1.5 bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.8)] top-[15%] animate-pulse"></div>
+            <div class="absolute inset-x-0 h-1.5 bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.8)] top-[45%] animate-pulse"></div>
+            <div class="absolute inset-x-0 h-1.5 bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.8)] top-[75%] animate-pulse"></div>
           </div>
-          <div class="absolute bottom-6 font-mono text-[9px] text-brand-text3 tracking-[0.2em]">LOW-RANK ADAPTERS ONLY</div>
+          <div class="absolute bottom-6 font-mono text-[9px] text-gray-400 tracking-[0.2em]">LOW-RANK ADAPTERS ONLY</div>
         </div>
         <div class="p-8">
-          <h3 class="text-2xl font-bold mb-3">LoRA (Low-Rank)</h3>
-          <p class="text-brand-text2 leading-relaxed mb-6">Original weights are frozen. Only tiny rank-decomposition matrices are trained and injected into layers.</p>
-          <div class="flex justify-between items-center font-mono text-sm font-semibold pt-6 border-t border-brand-border">
-            <span class="text-brand-text3">Trainable Parameters:</span>
-            <span class="text-brand-accent">&lt; 1%</span>
+          <h3 class="text-2xl font-bold mb-3 text-gray-900">LoRA (Low-Rank)</h3>
+          <p class="text-gray-600 leading-relaxed mb-6">Original weights are frozen. Only tiny rank-decomposition matrices are trained and injected into layers.</p>
+          <div class="flex justify-between items-center font-mono text-sm font-semibold pt-6 border-t border-gray-200">
+            <span class="text-gray-500">Trainable Parameters:</span>
+            <span class="text-blue-600">&lt; 1%</span>
           </div>
         </div>
       </div>
@@ -191,29 +412,29 @@
 </section>
 
 <!-- Methods Grid -->
-<section class="py-24" id="methods">
+<section class="py-24 bg-gray-50" id="methods">
   <div class="container mx-auto px-5">
     <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
-      <span class="text-[10px] uppercase tracking-[0.2em] font-mono text-brand-accent mb-3 block">Method Library</span>
-      <h2 class="text-4xl font-bold tracking-tight mb-4">Supported Strategies</h2>
-      <p class="text-brand-text2 text-lg">Select a method to see the full 3D breakdown, paper details, and production-ready code snippets.</p>
+      <span class="text-xs uppercase tracking-wider font-mono text-blue-600 mb-3 block">Method Library</span>
+      <h2 class="text-4xl font-bold tracking-tight mb-4 text-gray-900">Supported Strategies</h2>
+      <p class="text-gray-600 text-lg">Select a method to see the full 3D breakdown, paper details, and production-ready code snippets.</p>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {% for m in methods %}
-      <a href="/learn/{{ m.id }}" class="group relative flex flex-col bg-brand-bg2 rounded-2xl p-8 border border-brand-border hover:border-[var(--card-color)] hover:-translate-y-2 transition-all duration-300 fade-up delay-{{ loop.index % 6 }}" style="--card-color:{{ m.color }}">
-        <div class="absolute top-6 right-6 px-3 py-1 rounded-full bg-brand-bg3 border border-brand-border2 font-mono text-[10px] text-brand-text3 group-hover:text-[var(--card-color)] group-hover:border-[var(--card-color)] transition-colors">~{{ m.stats.vram_7b }} VRAM</div>
+      <a href="/learn/{{ m.id }}" class="group relative flex flex-col bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-300 hover:-translate-y-2 transition-all duration-300 fade-up delay-{{ loop.index % 6 }} hover:shadow-lg">
+        <div class="absolute top-6 right-6 px-3 py-1 rounded-full bg-gray-100 border border-gray-200 font-mono text-[10px] text-gray-600 group-hover:text-blue-600 group-hover:border-blue-300 transition-colors">~{{ m.stats.vram_7b }} VRAM</div>
         <span class="text-4xl mb-6 block">{{ m.emoji }}</span>
-        <div class="text-xl font-bold mb-2 transition-colors" style="color:{{ m.color }}">{{ m.name }}</div>
-        <div class="text-sm text-brand-text2 leading-relaxed mb-6 min-h-[40px]">{{ m.tagline }}</div>
-        <div class="font-mono text-[11px] p-3 rounded-xl bg-black/40 border border-white/[0.05] mb-8 overflow-x-auto whitespace-nowrap" style="color:{{ m.color }}">{{ m.formula }}</div>
-        <div class="flex justify-between mt-auto pt-6 border-t border-brand-border">
+        <div class="text-xl font-bold mb-2 transition-colors text-gray-900 group-hover:text-blue-600">{{ m.name }}</div>
+        <div class="text-sm text-gray-600 leading-relaxed mb-6 min-h-[40px]">{{ m.tagline }}</div>
+        <div class="font-mono text-[11px] p-3 rounded-xl bg-gray-900 border border-gray-800 mb-8 overflow-x-auto whitespace-nowrap text-blue-400">{{ m.formula }}</div>
+        <div class="flex justify-between mt-auto pt-6 border-t border-gray-200">
           <div class="flex flex-col">
-            <span class="text-[10px] text-brand-text3 uppercase tracking-wider mb-1">Trainable</span>
-            <span class="font-mono text-xs font-bold">{{ m.stats.params }}</span>
+            <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Trainable</span>
+            <span class="font-mono text-xs font-bold text-gray-900">{{ m.stats.params }}</span>
           </div>
           <div class="flex flex-col text-right">
-            <span class="text-[10px] text-brand-text3 uppercase tracking-wider mb-1">Speed</span>
-            <span class="font-mono text-xs font-bold">{{ m.stats.speed }}</span>
+            <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Speed</span>
+            <span class="font-mono text-xs font-bold text-gray-900">{{ m.stats.speed }}</span>
           </div>
         </div>
       </a>
@@ -222,48 +443,88 @@
   </div>
 </section>
 
-<!-- Final CTA -->
-<section class="py-32 bg-gradient-to-b from-transparent to-brand-bg2">
+<!-- Newsletter -->
+<section class="py-24 bg-gradient-to-r from-blue-50 to-purple-50 border-y border-gray-100">
   <div class="container mx-auto px-5 text-center fade-up">
-    <h2 class="text-5xl md:text-6xl font-bold tracking-tight mb-8">Ready to optimize?</h2>
-    <p class="text-brand-text2 text-xl max-w-2xl mx-auto mb-12">Join thousands of engineers using llmviz to understand and implement PEFT methods.</p>
-    <div class="flex flex-wrap justify-center gap-5">
-      <a href="/guide" class="btn-primary px-10 py-4 text-base rounded-2xl">Start the Selection Guide</a>
-      <a href="https://github.com/Tanaybh/finetuning-viz" class="btn-ghost px-10 py-4 text-base rounded-2xl">Star on GitHub</a>
+    <h2 class="text-4xl font-bold tracking-tight mb-4 text-gray-900">Stay Updated</h2>
+    <p class="text-gray-600 text-lg max-w-2xl mx-auto mb-8">Get notified when new PEFT methods are added, major updates land, or breakthrough papers are released.</p>
+    <div class="max-w-md mx-auto">
+      <form class="flex gap-3">
+        <input type="email" placeholder="Enter your email" class="flex-1 px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm">
+        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-sm">Subscribe</button>
+      </form>
+      <p class="text-gray-500 text-sm mt-3">No spam, unsubscribe anytime. We respect your privacy.</p>
     </div>
   </div>
 </section>
 
+<!-- Final CTA -->
+<section class="py-32 bg-gradient-to-b from-gray-50 to-white">
+  <div class="container mx-auto px-5 text-center fade-up">
+    <h2 class="text-5xl md:text-6xl font-bold tracking-tight mb-8 text-gray-900">Ready to Master PEFT?</h2>
+    <p class="text-gray-600 text-xl max-w-2xl mx-auto mb-12">Join 10,000+ engineers who use llmviz to understand, compare, and implement efficient fine-tuning methods. Start exploring in seconds.</p>
+    <div class="flex flex-wrap justify-center gap-5 mb-8">
+      <a href="/guide" class="btn-primary px-10 py-4 text-base">🎯 Find Your Method</a>
+      <a href="/explore" class="btn-ghost px-10 py-4 text-base">🔬 Explore 3D Models</a>
+      <a href="https://github.com/Tanay0510/finetuning-viz" target="_blank" class="btn-ghost px-10 py-4 text-base">⭐ Star on GitHub</a>
+    </div>
+    <p class="text-gray-500 text-sm">Free forever • No credit card required • Open source</p>
+  </div>
+</section>
+
 <!-- Footer -->
-<footer class="py-20 border-t border-brand-border bg-brand-bg">
+<footer class="py-20 border-t border-gray-200 bg-gray-50">
   <div class="container mx-auto px-5">
-    <div class="grid grid-cols-1 md:grid-cols-[2fr,1fr,1fr] gap-16 mb-16">
+    <div class="grid grid-cols-1 md:grid-cols-[2fr,1fr,1fr,1fr] gap-16 mb-16">
       <div>
-        <span class="text-2xl font-bold mb-6 block">llmviz.studio</span>
-        <p class="text-brand-text2 text-base leading-relaxed max-w-xs">The visual authority on LLM fine-tuning architecture and resource optimization.</p>
+        <span class="text-2xl font-bold mb-6 block text-gray-900">llmviz.studio</span>
+        <p class="text-gray-600 text-base leading-relaxed max-w-xs">The visual authority on LLM fine-tuning architecture and resource optimization. Making PEFT methods accessible to every engineer.</p>
+        <div class="flex gap-4 mt-6">
+          <a href="https://twitter.com/tanaybhardwaj" target="_blank" class="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors shadow-sm border border-gray-200">
+            <span class="text-sm">𝕏</span>
+          </a>
+          <a href="https://github.com/Tanay0510/finetuning-viz" target="_blank" class="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-gray-900 hover:text-white transition-colors shadow-sm border border-gray-200">
+            <span class="text-sm">GH</span>
+          </a>
+          <a href="https://discord.gg/llmviz" target="_blank" class="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-colors shadow-sm border border-gray-200">
+            <span class="text-sm">💬</span>
+          </a>
+        </div>
       </div>
       <div>
-        <h4 class="text-xs uppercase tracking-[0.2em] text-brand-text3 font-bold mb-8">Product</h4>
+        <h4 class="text-xs uppercase tracking-wider text-gray-500 font-bold mb-8">Product</h4>
         <ul class="space-y-4">
-          <li><a href="/explore" class="text-brand-text2 hover:text-brand-accent transition-colors">3D Explorer</a></li>
-          <li><a href="/playground" class="text-brand-text2 hover:text-brand-accent transition-colors">GPU Playground</a></li>
-          <li><a href="/guide" class="text-brand-text2 hover:text-brand-accent transition-colors">Method Guide</a></li>
+          <li><a href="/explore" class="text-gray-600 hover:text-blue-600 transition-colors">3D Explorer</a></li>
+          <li><a href="/playground" class="text-gray-600 hover:text-blue-600 transition-colors">GPU Playground</a></li>
+          <li><a href="/guide" class="text-gray-600 hover:text-blue-600 transition-colors">Method Guide</a></li>
+          <li><a href="/learn" class="text-gray-600 hover:text-blue-600 transition-colors">Learn Hub</a></li>
         </ul>
       </div>
       <div>
-        <h4 class="text-xs uppercase tracking-[0.2em] text-brand-text3 font-bold mb-8">Resources</h4>
+        <h4 class="text-xs uppercase tracking-wider text-gray-500 font-bold mb-8">Resources</h4>
         <ul class="space-y-4">
-          <li><a href="https://arxiv.org/abs/2106.09685" target="_blank" class="text-brand-text2 hover:text-brand-accent transition-colors">LoRA Paper</a></li>
-          <li><a href="https://huggingface.co/docs/peft" target="_blank" class="text-brand-text2 hover:text-brand-accent transition-colors">PEFT Docs</a></li>
-          <li><a href="https://github.com/Tanaybh" target="_blank" class="text-brand-text2 hover:text-brand-accent transition-colors">Creator</a></li>
+          <li><a href="https://arxiv.org/abs/2106.09685" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">LoRA Paper</a></li>
+          <li><a href="https://huggingface.co/docs/peft" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">PEFT Docs</a></li>
+          <li><a href="https://github.com/huggingface/peft" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">PEFT Library</a></li>
+          <li><a href="/data" class="text-gray-600 hover:text-blue-600 transition-colors">Data Prep Guide</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4 class="text-xs uppercase tracking-wider text-gray-500 font-bold mb-8">Company</h4>
+        <ul class="space-y-4">
+          <li><a href="https://tanaybhardwaj.com" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">About</a></li>
+          <li><a href="https://github.com/Tanay0510" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">GitHub</a></li>
+          <li><a href="mailto:hello@llmviz.studio" class="text-gray-600 hover:text-blue-600 transition-colors">Contact</a></li>
+          <li><a href="/privacy" class="text-gray-600 hover:text-blue-600 transition-colors">Privacy</a></li>
         </ul>
       </div>
     </div>
-    <div class="pt-10 border-t border-brand-border flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-brand-text3">
-      <p>&copy; 2026 llmviz.studio · Created by Tanay Bhardwaj</p>
+    <div class="pt-10 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-gray-500">
+      <p>&copy; 2026 llmviz.studio · Created by Tanay Bhardwaj · Made with ❤️ for the AI community</p>
       <div class="flex gap-8">
-        <a href="#" class="hover:text-brand-text transition-colors">Twitter</a>
-        <a href="#" class="hover:text-brand-text transition-colors">GitHub</a>
+        <a href="/terms" class="hover:text-gray-700 transition-colors">Terms</a>
+        <a href="/privacy" class="hover:text-gray-700 transition-colors">Privacy</a>
+        <a href="https://github.com/Tanay0510/finetuning-viz" target="_blank" class="hover:text-gray-700 transition-colors">Source</a>
       </div>
     </div>
   </div>
