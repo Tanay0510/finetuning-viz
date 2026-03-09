@@ -3,5 +3,4 @@
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the database initialization
-python init_db.py
+# Database migrations are handled separately for Neon

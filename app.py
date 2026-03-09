@@ -5,6 +5,7 @@ import os
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from flask_migrate import Migrate
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
@@ -13,6 +14,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('NEON_DATABASE_URL', 'sql
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -132,6 +134,4 @@ def data_prep():
     return render_template("data.html")
 
 if __name__ == "__main__":
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, host="0.0.0.0", port=5000)
