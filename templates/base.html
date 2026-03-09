@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
@@ -11,6 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -43,28 +44,14 @@
       .btn-ghost {
         @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold bg-transparent text-brand-text2 border border-brand-border2 transition-all hover:text-brand-text hover:border-brand-text3;
       }
-      .fade-up {
-        animation: fadeUp 0.6s ease-out both;
-      }
-      .fade-in {
-        animation: fadeIn 0.5s ease-out both;
-      }
+      .fade-up { animation: fadeUp 0.6s ease-out both; }
+      .fade-in { animation: fadeIn 0.5s ease-out both; }
       .delay-1 { animation-delay: 0.1s; }
       .delay-2 { animation-delay: 0.2s; }
       .delay-3 { animation-delay: 0.3s; }
-      .delay-4 { animation-delay: 0.4s; }
     }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    /* Custom scrollbar */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: #06080F; }
     ::-webkit-scrollbar-thumb { background: #1A2030; border-radius: 4px; }

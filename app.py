@@ -105,7 +105,7 @@ METHODS = [
         "insight": "Bottleneck m=64 on d=4096: each adapter = 524K params. 2 per layer × 32 layers = 33.5M trainable. Composable via AdapterFusion.",
         "stats": {"params": "~0.5-3%", "vram_7b": "~18GB", "vram_70b": "~160GB", "checkpoint": "~30MB", "speed": "Moderate"},
         "paper": {"title": "Parameter-Efficient Transfer Learning for NLP", "url": "https://arxiv.org/abs/1902.00751", "year": 2019},
-        "code": "from adapters import AutoAdapterModel\n\nmodel = AutoAdapterModel.from_pretrained(\"meta-llama/Llama-2-7b-hf\")\nmodel.add_adapter(\"my_task\", config=\"seq_bn\")\nmodel.train_adapter(\"my_task\")\n\ntrainable = sum(p.numel() for p in model.parameters() if p.requires_grad)\nprint(f\"Trainable: {trainable:,}\")",
+        "code": "From adapters import AutoAdapterModel\n\nmodel = AutoAdapterModel.from_pretrained(\"meta-llama/Llama-2-7b-hf\")\nmodel.add_adapter(\"my_task\", config=\"seq_bn\")\nmodel.train_adapter(\"my_task\")\n\ntrainable = sum(p.numel() for p in model.parameters() if p.requires_grad)\nprint(f\"Trainable: {trainable:,}\")",
     },
     {
         "id": "rlhf", "name": "RLHF / DPO", "short": "RLHF/DPO", "emoji": "👍",

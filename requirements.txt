@@ -3,3 +3,4 @@ gunicorn>=21.2
 flask-sqlalchemy
 flask-login
 werkzeug
+psycopg2-binary
