@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% set active_page = "data" %}
+{% block title %}Data Prep & Packing — llmviz.studio{% endblock %}
+
+{% block head %}
+<style type="text/tailwindcss">
+  @layer components {
+    .data-card {
+      @apply bg-brand-bg2 rounded-3xl border border-brand-border p-8 shadow-2xl relative overflow-hidden;
+    }
+    .token-chip {
+      @apply inline-block px-2 py-1 rounded text-[11px] font-mono font-bold m-0.5 border border-white/5 transition-all duration-300 hover:scale-110;
+    }
+    .pad-slot {
+      @apply w-full h-8 rounded bg-brand-bg border border-brand-border flex items-center px-3 gap-1 relative overflow-hidden;
+    }
+    .pad-token {
+      @apply h-4 rounded bg-brand-accent/40 border border-brand-accent/20;
+    }
+    .pad-waste {
+      @apply h-4 rounded bg-red-500/10 border border-red-500/20 flex-grow;
+    }
+  }
+  
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  .animate-token { animation: slideIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-5 py-16 max-w-6xl">
+  <div class="mb-12 fade-up">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-[10px] font-mono font-bold text-brand-accent mb-4 uppercase tracking-widest">
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></span>
+      SFT DATA PROCESSING
+    </div>
+    <h1 class="text-4xl font-bold tracking-tight mb-3">📊 Data Prep Studio</h1>
+    <p class="text-brand-text2 text-lg">Visualize tokenization and the power of sample packing</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-[1fr,400px] gap-8">
+    <div class="space-y-8">
+      <!-- Section 1: Tokenization -->
+      <div class="data-card fade-up">
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h2 class="text-xl font-bold">1. Tokenization</h2>
+            <p class="text-brand-text3 text-xs font-mono uppercase mt-1">Llama-2 BPE Encoding</p>
+          </div>
+          <button onclick="tokenize()" class="btn-primary !py-2 !text-xs">RE-TOKENIZE</button>
+        </div>
+
+        <div class="bg-black/40 rounded-2xl border border-brand-border p-6 mb-6">
+          <p class="text-brand-text2 text-sm leading-relaxed" id="raw-text">
+            "Fine-tuning is the process of taking a pre-trained model and adapting it to a specific task or dataset. Sample packing makes this significantly more efficient by concatenating examples."
+          </p>
+        </div>
+
+        <div class="flex flex-wrap" id="token-stream">
+          <!-- Tokens injected here -->
+        </div>
+      </div>
+
+      <!-- Section 2: The Problem (Padding) -->
+      <div class="data-card fade-up delay-1">
+        <h2 class="text-xl font-bold mb-2">2. The Problem: Wasteful Padding</h2>
+        <p class="text-brand-text2 text-sm mb-8 italic">Without packing, short examples are padded to the context length (e.g. 512), wasting GPU compute.</p>
+        
+        <div class="space-y-3">
+          <div class="pad-slot"><div class="pad-token w-[30%]"></div><div class="pad-waste"></div><span class="absolute right-3 font-mono text-[9px] text-red-500/50">70% WASTE</span></div>
+          <div class="pad-slot"><div class="pad-token w-[15%]"></div><div class="pad-waste"></div><span class="absolute right-3 font-mono text-[9px] text-red-500/50">85% WASTE</span></div>
+          <div class="pad-slot"><div class="pad-token w-[45%]"></div><div class="pad-waste"></div><span class="absolute right-3 font-mono text-[9px] text-red-500/50">55% WASTE</span></div>
+        </div>
+      </div>
+
+      <!-- Section 3: The Solution (Packing) -->
+      <div class="data-card fade-up delay-2">
+        <div class="flex justify-between items-center mb-8">
+          <div>
+            <h2 class="text-xl font-bold">3. The Solution: Multipack</h2>
+            <p class="text-brand-text3 text-xs font-mono uppercase mt-1">Constant GPU Utilization</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="text-xs font-bold text-green-400 font-mono" id="pack-efficiency">UTILIZATION: 0%</span>
+            <button onclick="startPacking()" class="btn-primary !py-2 !text-xs bg-green-600 hover:bg-green-700 shadow-green-500/20">RUN PACKING ENGINE</button>
+          </div>
+        </div>
+
+        <div class="h-24 bg-brand-bg rounded-2xl border border-brand-border relative overflow-hidden flex items-center px-4 gap-1" id="pack-window">
+          <!-- Packed samples injected here -->
+          <div class="absolute inset-0 flex items-center justify-center text-brand-text3 font-mono text-[10px] uppercase tracking-widest pointer-events-none opacity-20">Fixed Context Window (Max Length)</div>
+        </div>
+        
+        <div class="mt-6 flex justify-between text-[10px] font-mono text-brand-text3 uppercase tracking-widest">
+          <span>Batch Input Start</span>
+          <span>Sample Continuity (EOS Token)</span>
+          <span>Batch Input End</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR: Technical Details -->
+    <div class="space-y-6">
+      <div class="data-card !p-6 border-brand-accent/20 fade-up delay-1">
+        <h4 class="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-text3 mb-6">Processing Specs</h4>
+        <div class="space-y-4">
+          <div class="flex justify-between items-center py-3 border-b border-brand-border">
+            <span class="text-xs text-brand-text2">Algorithm</span>
+            <span class="font-mono text-xs font-bold text-brand-accent">BPE (Byte-Pair)</span>
+          </div>
+          <div class="flex justify-between items-center py-3 border-b border-brand-border">
+            <span class="text-xs text-brand-text2">Vocab Size</span>
+            <span class="font-mono text-xs font-bold text-brand-accent">32,000</span>
+          </div>
+          <div class="flex justify-between items-center py-3 border-b border-brand-border">
+            <span class="text-xs text-brand-text2">Special Tokens</span>
+            <span class="font-mono text-xs font-bold text-brand-accent">[BOS], [EOS], [PAD]</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="data-card !p-6 fade-up delay-2">
+        <h4 class="font-mono text-[10px] uppercase tracking-[0.2em] text-brand-text3 mb-4">Why Pack?</h4>
+        <div class="space-y-4 text-[13px] text-brand-text2 leading-relaxed">
+          <p>Standard training processes one example at a time. If your context window is 4096 but your example is only 500 tokens, <strong>88% of your compute is wasted</strong> on padding tokens.</p>
+          <p><strong>Sample Packing</strong> concatenates multiple examples together, separated by an EOS token, to fill every slot in the sequence.</p>
+          <div class="p-4 rounded-xl bg-green-500/5 border border-green-500/20 text-green-400 text-xs">
+            ✓ Reduces training time by 2x to 10x.<br/>
+            ✓ Maximizes TFLOPS/Watt.<br/>
+            ✓ Standard in Axolotl & Unsloth.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const words = ["Fine-tuning", "is", "the", "process", "of", "taking", "a", "pre-trained", "model", "and", "adapting", "it", "to", "a", "specific", "task", "or", "dataset.", "Sample", "packing", "makes", "this", "significantly", "more", "efficient", "by", "concatenating", "examples."];
+const colors = ["#3B82F6", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981", "#60A5FA"];
+
+function tokenize() {
+  const container = document.getElementById('token-stream');
+  container.innerHTML = '';
+  
+  words.forEach((word, i) => {
+    setTimeout(() => {
+      const chip = document.createElement('span');
+      chip.className = 'token-chip animate-token';
+      const color = colors[i % colors.length];
+      chip.style.backgroundColor = `${color}15`;
+      chip.style.color = color;
+      chip.style.borderColor = `${color}30`;
+      chip.textContent = word;
+      container.appendChild(chip);
+    }, i * 40);
+  });
+}
+
+function startPacking() {
+  const window = document.getElementById('pack-window');
+  const efficiency = document.getElementById('pack-efficiency');
+  window.innerHTML = '';
+  
+  let currentWidth = 0;
+  const samples = [
+    { w: 25, col: '#3B82F6', label: 'Sample A' },
+    { w: 15, col: '#8B5CF6', label: 'Sample B' },
+    { w: 35, col: '#EC4899', label: 'Sample C' },
+    { w: 20, col: '#F59E0B', label: 'Sample D' }
+  ];
+
+  samples.forEach((s, i) => {
+    setTimeout(() => {
+      const block = document.createElement('div');
+      block.className = 'h-12 rounded-lg border flex flex-col items-center justify-center animate-token relative group';
+      block.style.width = `${s.w}%`;
+      block.style.backgroundColor = `${s.col}20`;
+      block.style.borderColor = `${s.col}50`;
+      
+      block.innerHTML = `
+        <span class="text-[8px] font-bold text-white/80">${s.label}</span>
+        <div class="absolute right-0 inset-y-0 w-px bg-white/40 group-hover:bg-white shadow-[0_0_10px_white]"></div>
+      `;
+      
+      window.appendChild(block);
+      currentWidth += s.w;
+      efficiency.textContent = `UTILIZATION: ${currentWidth}%`;
+      if (currentWidth >= 95) efficiency.className = 'text-xs font-bold text-green-400 font-mono animate-pulse';
+    }, i * 600);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  tokenize();
+});
+</script>
+{% endblock %}
