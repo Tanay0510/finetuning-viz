@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+{% set active_page = "learn" %}
+{% block title %}{{ method.name }} Explained — llmviz.studio{% endblock %}
+
+{% block head %}
+<style>
+  :root { --mc: {{ method.color }}; --mac: {{ method.accent }}; }
+
+  .learn-hero {
+    padding: 40px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .learn-hero .breadcrumb {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text3);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+  }
+  .learn-hero .breadcrumb a { color: var(--text2); }
+  .learn-hero .breadcrumb a:hover { color: var(--text); }
+  .learn-hero h1 { font-size: 36px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
+  .learn-hero h1 .emoji { margin-right: 8px; }
+  .learn-hero .tagline { font-size: 18px; color: var(--mc); font-weight: 500; margin-bottom: 12px; }
+  .learn-hero .meta { display: flex; gap: 16px; flex-wrap: wrap; }
+  .learn-hero .meta-item {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text3);
+    padding: 4px 12px; border-radius: 6px; background: var(--bg2); border: 1px solid var(--border);
+  }
+  .learn-hero .meta-item span { color: var(--text2); }
+
+  .learn-body { display: grid; grid-template-columns: 1fr 340px; gap: 32px; padding-bottom: 80px; }
+  @media (max-width: 900px) { .learn-body { grid-template-columns: 1fr; } }
+
+  /* Main content */
+  .learn-main {}
+  .learn-section { margin-bottom: 36px; }
+  .learn-section h2 {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+    margin-bottom: 12px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .learn-section p {
+    font-size: 14.5px; line-height: 1.9; color: var(--text2); font-weight: 400;
+  }
+
+  /* Formula highlight */
+  .formula-banner {
+    background: var(--bg2); border-radius: 10px; padding: 16px 20px;
+    border-left: 3px solid var(--mc); margin-bottom: 32px;
+    font-family: 'JetBrains Mono', monospace; font-size: 15px; color: var(--mc);
+    letter-spacing: 0.02em;
+  }
+
+  /* Code block */
+  .code-section { margin-bottom: 36px; }
+  .code-block {
+    background: #0a0e16; border-radius: 10px; padding: 18px;
+    border: 1px solid var(--border); overflow-x: auto; position: relative;
+  }
+  .code-block pre {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    line-height: 1.75; color: #c9d1d9; margin: 0; white-space: pre;
+  }
+  .code-block .copy-btn {
+    position: absolute; top: 10px; right: 10px;
+    padding: 4px 12px; border-radius: 5px; background: var(--bg3);
+    border: 1px solid var(--border2); color: var(--text3);
+    font-size: 10px; cursor: pointer; font-family: 'JetBrains Mono', monospace;
+  }
+  .code-block .copy-btn:hover { color: var(--text); border-color: var(--text3); }
+  .code-label { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--mc); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+
+  /* Benchmarks table */
+  .bench-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+  .bench-table th {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3);
+    text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border);
+  }
+  .bench-table td {
+    font-size: 13px; padding: 10px 12px; border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .bench-table td:nth-child(2) {
+    font-family: 'JetBrains Mono', monospace; color: var(--mc); font-weight: 600;
+  }
+  .bench-table td:nth-child(3) {
+    font-family: 'JetBrains Mono', monospace; color: var(--text3); font-size: 12px;
+  }
+  .bench-note { font-size: 11px; color: var(--text3); font-style: italic; }
+
+  /* Sidebar */
+  .sidebar {}
+  .sidebar-panel {
+    background: var(--bg2); border-radius: 12px; padding: 18px;
+    border: 1px solid var(--border); margin-bottom: 14px;
+  }
+  .sidebar-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--text3); margin-bottom: 12px;
+  }
+  .sidebar-title.mc { color: var(--mc); }
+
+  /* Tips */
+  .tip-item {
+    display: flex; gap: 8px; align-items: flex-start;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 12.5px; color: var(--text2); line-height: 1.6;
+  }
+  .tip-item:last-child { border-bottom: none; }
+  .tip-bullet { color: var(--mc); font-size: 11px; margin-top: 3px; flex-shrink: 0; }
+
+  /* Related methods */
+  .related-card {
+    display: block; padding: 12px; border-radius: 8px;
+    background: var(--bg); border: 1px solid var(--border);
+    margin-bottom: 8px; transition: all 0.2s;
+  }
+  .related-card:hover { border-color: var(--text3); transform: translateX(3px); }
+  .related-card .rname { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+  .related-card .rwhy { font-size: 11px; color: var(--text3); }
+
+  /* Paper link */
+  .paper-link {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px; border-radius: 8px; background: var(--bg);
+    border: 1px solid var(--border); font-size: 13px; color: var(--text2);
+    transition: all 0.2s;
+  }
+  .paper-link:hover { border-color: var(--mc); color: var(--text); }
+  .paper-link .paper-icon { font-size: 18px; }
+  .paper-link .paper-year {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--text3); margin-left: auto;
+  }
+
+  /* Stats grid */
+  .stats-mini { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .stat-mini {
+    background: var(--bg); border-radius: 6px; padding: 10px;
+    border: 1px solid var(--border);
+  }
+  .stat-mini .slabel { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 2px; }
+  .stat-mini .sval { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--mc); font-weight: 600; }
+
+  /* Nav between methods */
+  .method-nav { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 20px; }
+  .mnav-btn {
+    padding: 5px 11px; border-radius: 6px; font-size: 11px; font-weight: 500;
+    border: 1px solid var(--border); background: transparent; color: var(--text3);
+    cursor: pointer; transition: all 0.2s; font-family: inherit;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+  }
+  .mnav-btn:hover { border-color: var(--text3); color: var(--text2); }
+  .mnav-btn.active { border-color: var(--mc); color: var(--mc); background: rgba(59,130,246,0.05); }
+
+  /* CTA row */
+  .cta-row { display: flex; gap: 8px; margin-top: 20px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Method navigation -->
+  <div class="method-nav fade-up" style="margin-top:20px">
+    {% for m in methods %}
+    <a href="/learn/{{ m.id }}" class="mnav-btn {{ 'active' if m.id == method.id else '' }}" style="{% if m.id == method.id %}--mc:{{ m.color }};border-color:{{ m.color }};color:{{ m.color }}{% endif %}">{{ m.emoji }} {{ m.short }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- Hero -->
+  <div class="learn-hero fade-up">
+    <div class="breadcrumb">
+      <a href="/">Home</a> <span>→</span> <a href="/explore">Methods</a> <span>→</span> {{ method.name }}
+    </div>
+    <h1><span class="emoji">{{ method.emoji }}</span>{{ method.name }}</h1>
+    <div class="tagline">{{ method.tagline }}</div>
+    <div class="meta">
+      <div class="meta-item">Params: <span>{{ method.stats.params }}</span></div>
+      <div class="meta-item">VRAM (7B): <span>{{ method.stats.vram_7b }}</span></div>
+      <div class="meta-item">VRAM (70B): <span>{{ method.stats.vram_70b }}</span></div>
+      <div class="meta-item">Checkpoint: <span>{{ method.stats.checkpoint }}</span></div>
+      <div class="meta-item">Speed: <span>{{ method.stats.speed }}</span></div>
+    </div>
+  </div>
+
+  <!-- Body -->
+  <div class="learn-body">
+    <!-- Main column -->
+    <div class="learn-main">
+      <!-- Formula -->
+      <div class="formula-banner fade-up">{{ method.formula }}</div>
+
+      <!-- Sections -->
+      {% for sec in deep.sections %}
+      <div class="learn-section fade-up">
+        <h2>{{ sec.title }}</h2>
+        <p>{{ sec.content }}</p>
+      </div>
+      {% endfor %}
+
+      <!-- Benchmarks -->
+      {% if deep.benchmarks %}
+      <div class="learn-section fade-up">
+        <h2>Benchmarks</h2>
+        <table class="bench-table">
+          <thead>
+            <tr><th>Task</th><th>Score</th><th>Baseline</th><th>Note</th></tr>
+          </thead>
+          <tbody>
+            {% for b in deep.benchmarks %}
+            <tr>
+              <td>{{ b.task }}</td>
+              <td>{{ b.score }}</td>
+              <td>{{ b.baseline }}</td>
+              <td class="bench-note">{{ b.note }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      <!-- Code -->
+      <div class="code-section fade-up">
+        <div class="code-label">Quick Start Code</div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode()">Copy</button>
+          <pre>{{ method.code }}</pre>
+        </div>
+      </div>
+
+      <!-- CTAs -->
+      <div class="cta-row fade-up">
+        <a href="/explore?method={{ method.id }}" class="btn btn-primary">🔬 See in 3D Explorer</a>
+        <a href="/playground" class="btn btn-ghost">⚡ Try in Playground</a>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <!-- Stats -->
+      <div class="sidebar-panel fade-up">
+        <div class="sidebar-title mc">At a Glance</div>
+        <div class="stats-mini">
+          <div class="stat-mini"><div class="slabel">Params</div><div class="sval">{{ method.stats.params }}</div></div>
+          <div class="stat-mini"><div class="slabel">Speed</div><div class="sval">{{ method.stats.speed }}</div></div>
+          <div class="stat-mini"><div class="slabel">VRAM 7B</div><div class="sval">{{ method.stats.vram_7b }}</div></div>
+          <div class="stat-mini"><div class="slabel">Checkpoint</div><div class="sval">{{ method.stats.checkpoint }}</div></div>
+        </div>
+      </div>
+
+      <!-- Key Insight -->
+      <div class="sidebar-panel fade-up">
+        <div class="sidebar-title mc">Key Insight</div>
+        <p style="font-size:13px;color:var(--text2);line-height:1.8;font-style:italic">{{ method.insight }}</p>
+      </div>
+
+      <!-- Paper -->
+      {% if method.paper.url %}
+      <div class="sidebar-panel fade-up">
+        <div class="sidebar-title">Research Paper</div>
+        <a href="{{ method.paper.url }}" target="_blank" class="paper-link">
+          <span class="paper-icon">📄</span>
+          <span>{{ method.paper.title }}</span>
+          {% if method.paper.year %}<span class="paper-year">{{ method.paper.year }}</span>{% endif %}
+        </a>
+      </div>
+      {% endif %}
+
+      <!-- Tips -->
+      {% if deep.tips %}
+      <div class="sidebar-panel fade-up">
+        <div class="sidebar-title mc">Pro Tips</div>
+        {% for tip in deep.tips %}
+        <div class="tip-item">
+          <span class="tip-bullet">▸</span>
+          <span>{{ tip }}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Related -->
+      {% if deep.related %}
+      <div class="sidebar-panel fade-up">
+        <div class="sidebar-title">Related Methods</div>
+        {% for rel in deep.related %}
+        <a href="/learn/{{ rel.id }}" class="related-card">
+          <div class="rname">{{ rel.title }}</div>
+          <div class="rwhy">{{ rel.why }}</div>
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function copyCode() {
+  const code = document.querySelector('.code-block pre').textContent;
+  navigator.clipboard.writeText(code);
+  const btn = document.querySelector('.copy-btn');
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 1500);
+}
+</script>
+{% endblock %}

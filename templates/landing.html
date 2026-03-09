@@ -87,7 +87,7 @@
     </div>
     <div class="method-grid">
       {% for m in methods %}
-      <a href="/explore?method={{ m.id }}" class="method-card fade-up delay-{{ loop.index % 4 }}" style="--card-color:{{ m.color }}">
+      <a href="/learn/{{ m.id }}" class="method-card fade-up delay-{{ loop.index % 4 }}" style="--card-color:{{ m.color }}">
         <span class="card-emoji">{{ m.emoji }}</span>
         <div class="card-name" style="color:{{ m.color }}">{{ m.name }}</div>
         <div class="card-tagline">{{ m.tagline }}</div>
