@@ -338,6 +338,10 @@ def learn(method_id):
     deep = DEEP_DIVES.get(method_id, {})
     return render_template("learn.html", method=method, deep=deep, methods=METHODS)
 
+@app.route("/guide")
+def guide():
+    return render_template("guide.html", methods=METHODS)
+
 @app.route("/api/methods")
 def api_methods():
     return jsonify(METHODS)
