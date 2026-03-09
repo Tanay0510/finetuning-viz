@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
@@ -11,6 +11,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -43,28 +44,14 @@
       .btn-ghost {
         @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-[13px] font-semibold bg-transparent text-brand-text2 border border-brand-border2 transition-all hover:text-brand-text hover:border-brand-text3;
       }
-      .fade-up {
-        animation: fadeUp 0.6s ease-out both;
-      }
-      .fade-in {
-        animation: fadeIn 0.5s ease-out both;
-      }
+      .fade-up { animation: fadeUp 0.6s ease-out both; }
+      .fade-in { animation: fadeIn 0.5s ease-out both; }
       .delay-1 { animation-delay: 0.1s; }
       .delay-2 { animation-delay: 0.2s; }
       .delay-3 { animation-delay: 0.3s; }
-      .delay-4 { animation-delay: 0.4s; }
     }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    /* Custom scrollbar */
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     ::-webkit-scrollbar { width: 8px; }
     ::-webkit-scrollbar-track { background: #06080F; }
     ::-webkit-scrollbar-thumb { background: #1A2030; border-radius: 4px; }
@@ -85,7 +72,8 @@
         <a href="/explore" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'explore' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Explorer</a>
         <a href="/playground" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'playground' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Playground</a>
         <a href="/guide" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'guide' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Guide</a>
-        <a href="/data" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'data' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Data Prep</a>
+        <a href="/data" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'data' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Data</a>
+        <a href="/learn/lora" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'learn' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Learn</a>
         <div class="w-px h-4 bg-brand-border mx-1"></div>
         <a href="/logout" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold text-red-400 hover:bg-red-500/10 transition-all">Logout</a>
       {% else %}
