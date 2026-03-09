@@ -3,23 +3,148 @@
 {% block title %}Which Fine-Tuning Method Should I Use? — llmviz.studio{% endblock %}
 
 {% block head %}
-<!-- Tailwind is loaded in base.html -->
+<style>
+  .guide-wrap { padding: 40px 0 80px; max-width: 680px; margin: 0 auto; }
+  .guide-header { text-align: center; margin-bottom: 40px; }
+  .guide-header h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px; }
+  .guide-header p { color: var(--text2); font-size: 15px; line-height: 1.7; }
+
+  /* Progress */
+  .progress-bar { display: flex; gap: 4px; margin-bottom: 36px; }
+  .progress-step {
+    flex: 1; height: 4px; border-radius: 2px; background: var(--border);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .progress-step.done { background: var(--accent); box-shadow: 0 0 8px rgba(59,130,246,0.3); }
+  .progress-step.current { background: var(--accent2); animation: progressPulse 1.5s infinite; }
+  @keyframes progressPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* Question card */
+  .question-card {
+    background: var(--bg2); border-radius: 16px; padding: 32px;
+    border: 1px solid var(--border); margin-bottom: 20px;
+    animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .q-number {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    color: var(--accent); text-transform: uppercase; letter-spacing: 0.12em;
+    margin-bottom: 10px;
+  }
+  .q-text { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.3; }
+  .q-sub { font-size: 13px; color: var(--text2); margin-bottom: 24px; line-height: 1.6; }
+
+  /* Answer options */
+  .options { display: flex; flex-direction: column; gap: 8px; }
+  .option {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px 20px; border-radius: 12px;
+    background: var(--bg); border: 1.5px solid var(--border);
+    cursor: pointer; transition: all 0.25s;
+    position: relative; overflow: hidden;
+  }
+  .option::before {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--accent); opacity: 0; transition: opacity 0.2s;
+  }
+  .option:hover { border-color: var(--border2); transform: translateX(4px); }
+  .option:hover::before { opacity: 1; }
+  .option.selected { border-color: var(--accent); background: rgba(59,130,246,0.06); }
+  .option.selected::before { opacity: 1; }
+  .option-icon { font-size: 24px; flex-shrink: 0; width: 36px; text-align: center; }
+  .option-content { flex: 1; }
+  .option-label { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+  .option-desc { font-size: 12px; color: var(--text3); line-height: 1.5; }
+
+  /* Back button */
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px; font-size: 12px;
+    color: var(--text3); background: transparent; border: 1px solid var(--border);
+    cursor: pointer; transition: all 0.2s; font-family: inherit; margin-bottom: 16px;
+  }
+  .back-btn:hover { color: var(--text2); border-color: var(--text3); }
+
+  /* Result card */
+  .result-card {
+    background: var(--bg2); border-radius: 16px; overflow: hidden;
+    border: 1px solid var(--border);
+    animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .result-header {
+    padding: 28px 32px 20px; text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(59,130,246,0.05), transparent);
+  }
+  .result-badge {
+    display: inline-block; padding: 4px 14px; border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 12px;
+  }
+  .result-method { font-size: 36px; margin-bottom: 8px; }
+  .result-name { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+  .result-tagline { font-size: 14px; color: var(--text2); margin-top: 4px; }
+
+  .result-body { padding: 24px 32px 32px; }
+  .result-section { margin-bottom: 20px; }
+  .result-section-title {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 10px;
+  }
+
+  /* Reasoning list */
+  .reason-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 8px 0; font-size: 13.5px; color: var(--text2); line-height: 1.65;
+  }
+  .reason-icon { flex-shrink: 0; margin-top: 2px; }
+
+  /* Stats row */
+  .result-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .rstat {
+    background: var(--bg); border-radius: 8px; padding: 12px; text-align: center;
+    border: 1px solid var(--border);
+  }
+  .rstat-label { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .rstat-val { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 600; }
+
+  /* CTA buttons in result */
+  .result-actions { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+
+  /* Restart */
+  .restart-row { text-align: center; margin-top: 24px; }
+
+  /* Confidence meter */
+  .confidence-wrap { margin-top: 12px; }
+  .confidence-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+  .confidence-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .confidence-label { display: flex; justify-content: space-between; margin-top: 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--text3); }
+
+  /* Share section */
+  .share-row { display: flex; gap: 8px; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .share-label { font-size: 12px; color: var(--text3); }
+  .share-btn {
+    padding: 5px 12px; border-radius: 6px; font-size: 11px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--text2); cursor: pointer; font-family: inherit; transition: all 0.2s;
+  }
+  .share-btn:hover { border-color: var(--text3); color: var(--text); }
+
+  .hidden { display: none; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="container max-w-[700px] mx-auto py-16 px-5 min-h-[80vh] flex flex-col">
-  <div class="text-center mb-12 fade-up">
-    <h1 class="text-4xl font-bold tracking-tight mb-4">🧭 Selection Guide</h1>
-    <p class="text-brand-text2 text-lg">Answer a few questions about your project and hardware.<br/>We'll recommend the best fine-tuning approach.</p>
+<div class="container guide-wrap">
+  <div class="guide-header fade-up">
+    <h1>🧭 Which Method Should I Use?</h1>
+    <p>Answer a few questions about your project and hardware.<br/>We'll recommend the best fine-tuning approach.</p>
   </div>
 
-  <div id="progress" class="flex gap-2 mb-10 h-1.5 px-1">
-    <!-- Progress dots via JS -->
-  </div>
+  <div class="progress-bar" id="progress"></div>
 
-  <div id="tree-container" class="flex-grow">
-    <!-- Question card via JS -->
-  </div>
+  <div id="tree-container"></div>
 </div>
 {% endblock %}
 
@@ -93,7 +218,9 @@ const QUESTIONS = [
   },
 ];
 
+// Scoring rules — each tag combination adds points to methods
 const SCORING = {
+  // GPU constraints
   "low_vram+large_model":     { qlora: 10, lora: 3 },
   "low_vram+huge_model":      { qlora: 10 },
   "low_vram+medium_model":    { qlora: 8, lora: 7, prefix: 5 },
@@ -107,40 +234,77 @@ const SCORING = {
   "high_vram+large_model":    { full: 6, lora: 8, qlora: 5, rlhf: 4 },
   "high_vram+huge_model":     { lora: 7, qlora: 7, full: 4 },
   "cost_sensitive":           { qlora: 5, lora: 4, prefix: 3 },
+
+  // Goal
   "sft_task":                 { lora: 3, full: 3, qlora: 2 },
   "domain_task":              { lora: 4, full: 4, qlora: 3 },
   "alignment_task":           { rlhf: 10, full: 2 },
   "multi_task":               { lora: 6, adapters: 7, prefix: 5 },
+
+  // Data
   "tiny_data":                { prefix: 4, lora: 3, adapters: 2 },
   "moderate_data":            { lora: 4, qlora: 3, adapters: 3 },
   "large_data":               { full: 5, lora: 3, qlora: 2 },
   "preference_data":          { rlhf: 10 },
+
+  // Priority
   "want_quality":             { full: 5, rlhf: 3, lora: 2 },
   "want_efficiency":          { qlora: 5, lora: 4, prefix: 3 },
   "want_speed":               { lora: 5, prefix: 4, qlora: 3 },
   "want_simple":              { lora: 5, full: 3, qlora: 2 },
 };
 
+// Reasoning templates
 const REASONS = {
-  full:     { icon: "🔥", reasons: ["Your compute budget supports updating all parameters", "Full fine-tuning gives the highest quality ceiling", "Best for significant domain shifts from pretraining data"] },
-  lora:     { icon: "🔌", reasons: ["LoRA gives ~95% of full FT quality at a fraction of the cost", "Tiny adapter checkpoints make multi-task serving easy", "The go-to method for most practical fine-tuning scenarios"] },
-  qlora:    { icon: "📦", reasons: ["4-bit quantization makes large models fit on limited hardware", "Near-LoRA quality with dramatically less memory", "Best bang-for-buck when GPU memory is the bottleneck"] },
-  prefix:   { icon: "📎", reasons: ["Extremely lightweight — under 0.1% of parameters", "Zero modification to model weights — great for shared deployments", "Ideal when you need to swap between many tasks instantly"] },
-  adapters: { icon: "🧩", reasons: ["Modular and composable — combine adapters from different tasks", "Well-studied with a strong ecosystem (AdapterHub)", "Good balance of parameter efficiency and task performance"] },
-  rlhf:     { icon: "👍", reasons: ["Your preference data calls for alignment-specific training", "DPO is the simplest path from preference pairs to aligned model", "The standard final step before production deployment"] },
+  full:     { icon: "🔥", reasons: [
+    "Your compute budget supports updating all parameters",
+    "Full fine-tuning gives the highest quality ceiling",
+    "Best for significant domain shifts from pretraining data",
+  ]},
+  lora:     { icon: "🔌", reasons: [
+    "LoRA gives ~95% of full FT quality at a fraction of the cost",
+    "Tiny adapter checkpoints (10-50MB) make multi-task serving easy",
+    "The go-to method for most practical fine-tuning scenarios",
+  ]},
+  qlora:    { icon: "📦", reasons: [
+    "4-bit quantization makes large models fit on limited hardware",
+    "Near-LoRA quality with dramatically less memory",
+    "Best bang-for-buck when GPU memory is the bottleneck",
+  ]},
+  prefix:   { icon: "📎", reasons: [
+    "Extremely lightweight — under 0.1% of parameters",
+    "Zero modification to model weights — great for shared deployments",
+    "Ideal when you need to swap between many tasks instantly",
+  ]},
+  adapters: { icon: "🧩", reasons: [
+    "Modular and composable — combine adapters from different tasks",
+    "Well-studied with a strong ecosystem (AdapterHub)",
+    "Good balance of parameter efficiency and task performance",
+  ]},
+  rlhf:     { icon: "👍", reasons: [
+    "Your preference data calls for alignment-specific training",
+    "DPO is the simplest path from preference pairs to aligned model",
+    "The standard final step before production deployment",
+  ]},
 };
 
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
 let currentStep = 0;
 let answers = [];
 let allTags = [];
 
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
 function renderProgress() {
   const bar = document.getElementById('progress');
   bar.innerHTML = '';
   const total = QUESTIONS.length;
   for (let i = 0; i < total; i++) {
     const step = document.createElement('div');
-    step.className = `flex-1 h-full rounded-full transition-all duration-500 ${i < currentStep ? 'bg-brand-accent shadow-[0_0_8px_rgba(59,130,246,0.3)]' : i === currentStep ? 'bg-brand-accent2 opacity-50' : 'bg-brand-border'}`;
+    step.className = 'progress-step' + (i < currentStep ? ' done' : '') + (i === currentStep ? ' current' : '');
     bar.appendChild(step);
   }
 }
@@ -150,24 +314,24 @@ function renderQuestion() {
   const q = QUESTIONS[currentStep];
 
   let html = '';
+
   if (currentStep > 0) {
-    html += `<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-brand-text2 bg-brand-bg3/50 hover:bg-brand-bg3 transition-colors mb-6" onclick="goBack()">← Back</button>`;
+    html += `<button class="back-btn" onclick="goBack()">← Back</button>`;
   }
 
-  html += `<div class="bg-brand-bg2 rounded-[28px] border border-brand-border p-8 md:p-10 shadow-2xl fade-up">
-    <div class="text-[10px] uppercase tracking-[0.2em] font-mono text-brand-accent mb-4">${q.number}</div>
-    <h2 class="text-3xl font-bold tracking-tight mb-2 leading-tight">${q.text}</h2>
-    <p class="text-brand-text2 text-sm mb-8">${q.sub}</p>
-    <div class="space-y-3">`;
+  html += `<div class="question-card">
+    <div class="q-number">${q.number}</div>
+    <div class="q-text">${q.text}</div>
+    <div class="q-sub">${q.sub}</div>
+    <div class="options">`;
 
   q.options.forEach(opt => {
-    html += `<div class="group relative flex items-center gap-5 p-5 rounded-2xl bg-brand-bg border border-brand-border cursor-pointer transition-all duration-300 hover:border-brand-accent/50 hover:translate-x-1" onclick='selectOption(event, "${opt.id}", ${JSON.stringify(opt.tags)})'>
-      <div class="w-12 h-12 rounded-xl bg-brand-bg2 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">${opt.icon}</div>
-      <div class="flex-grow">
-        <div class="text-base font-bold mb-0.5">${opt.label}</div>
-        <div class="text-xs text-brand-text3 leading-relaxed">${opt.desc}</div>
+    html += `<div class="option" onclick="selectOption('${opt.id}', ${JSON.stringify(opt.tags)})">
+      <div class="option-icon">${opt.icon}</div>
+      <div class="option-content">
+        <div class="option-label">${opt.label}</div>
+        <div class="option-desc">${opt.desc}</div>
       </div>
-      <div class="absolute inset-y-0 left-0 w-1 bg-brand-accent rounded-l-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
     </div>`;
   });
 
@@ -188,69 +352,81 @@ function renderResult() {
   const winner = METHODS.find(m => m.id === winnerId);
   const reasons = REASONS[winnerId] || { icon: "✨", reasons: ["Best match for your constraints"] };
 
-  let html = `<div class="bg-brand-bg2 rounded-[32px] border border-brand-border overflow-hidden shadow-2xl fade-up">
-    <div class="p-8 md:p-10 text-center border-b border-brand-border relative overflow-hidden">
-      <div class="absolute inset-0 opacity-[0.03] pointer-events-none" style="background: ${winner.color}"></div>
-      <div class="inline-block px-3 py-1 rounded-full text-[9px] uppercase tracking-[0.15em] font-mono font-bold mb-6" style="background:${winner.color}20;color:${winner.color};border:1px solid ${winner.color}30">Recommended for you</div>
-      <div class="text-6xl mb-4">${winner.emoji}</div>
-      <h2 class="text-4xl font-bold tracking-tight mb-2" style="color:${winner.color}">${winner.name}</h2>
-      <p class="text-brand-text2 text-sm mb-8">${winner.tagline}</p>
-      
-      <div class="max-w-xs mx-auto">
-        <div class="flex justify-between text-[10px] font-mono text-brand-text3 mb-2 uppercase tracking-wider"><span>Confidence Score</span><span>${confidence}%</span></div>
-        <div class="w-full h-2 bg-brand-bg rounded-full overflow-hidden border border-brand-border2">
-          <div class="h-full rounded-full animate-[progress_1.5s_ease-out]" style="width:${confidence}%;background:${winner.color}"></div>
-        </div>
+  let html = `<div class="result-card">
+    <div class="result-header" style="background:linear-gradient(180deg, ${winner.color}08, transparent)">
+      <div class="result-badge" style="background:${winner.color}15;color:${winner.color};border:1px solid ${winner.color}30">Recommended for you</div>
+      <div class="result-method">${winner.emoji}</div>
+      <div class="result-name" style="color:${winner.color}">${winner.name}</div>
+      <div class="result-tagline">${winner.tagline}</div>
+      <div class="confidence-wrap">
+        <div class="confidence-bar"><div class="confidence-fill" style="width:${confidence}%;background:${winner.color}"></div></div>
+        <div class="confidence-label"><span>Confidence</span><span style="color:${winner.color}">${confidence}%</span></div>
       </div>
     </div>
 
-    <div class="p-8 md:p-10 space-y-10">
-      <div>
-        <div class="text-[10px] font-mono text-brand-text3 uppercase tracking-[0.2em] mb-6">Why this method</div>
-        <div class="space-y-4">`;
+    <div class="result-body">
+      <div class="result-section">
+        <div class="result-section-title" style="color:${winner.color}">Why this method</div>`;
 
   reasons.reasons.forEach(r => {
-    html += `<div class="flex gap-4 items-start text-[15px] text-brand-text2 leading-relaxed italic"><span class="text-xl" style="color:${winner.color}">▸</span><span>${r}</span></div>`;
+    html += `<div class="reason-item"><span class="reason-icon" style="color:${winner.color}">▸</span><span>${r}</span></div>`;
   });
 
-  html += `</div></div>
+  html += `</div>
 
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-brand-bg border border-brand-border p-4 rounded-2xl text-center">
-          <div class="text-[9px] font-mono text-brand-text3 uppercase mb-2">Params</div>
-          <div class="text-lg font-bold" style="color:${winner.color}">${winner.stats.params}</div>
+      <div class="result-section">
+        <div class="result-section-title" style="color:var(--text3)">Key Stats</div>
+        <div class="result-stats">
+          <div class="rstat"><div class="rstat-label">Params</div><div class="rstat-val" style="color:${winner.color}">${winner.stats.params}</div></div>
+          <div class="rstat"><div class="rstat-label">VRAM 7B</div><div class="rstat-val" style="color:${winner.color}">${winner.stats.vram_7b}</div></div>
+          <div class="rstat"><div class="rstat-label">Checkpoint</div><div class="rstat-val" style="color:${winner.color}">${winner.stats.checkpoint}</div></div>
+          <div class="rstat"><div class="rstat-label">Speed</div><div class="rstat-val" style="color:${winner.color}">${winner.stats.speed}</div></div>
         </div>
-        <div class="bg-brand-bg border border-brand-border p-4 rounded-2xl text-center">
-          <div class="text-[9px] font-mono text-brand-text3 uppercase mb-2">VRAM 7B</div>
-          <div class="text-lg font-bold" style="color:${winner.color}">${winner.stats.vram_7b}</div>
+      </div>`;
+
+  if (runnerUpId) {
+    const runnerUp = METHODS.find(m => m.id === runnerUpId);
+    html += `<div class="result-section">
+        <div class="result-section-title" style="color:var(--text3)">Runner-up</div>
+        <div class="reason-item">
+          <span style="font-size:18px">${runnerUp.emoji}</span>
+          <span><strong>${runnerUp.name}</strong> — ${runnerUp.tagline}</span>
         </div>
-        <div class="bg-brand-bg border border-brand-border p-4 rounded-2xl text-center">
-          <div class="text-[9px] font-mono text-brand-text3 uppercase mb-2">Checkpoint</div>
-          <div class="text-lg font-bold" style="color:${winner.color}">${winner.stats.checkpoint}</div>
-        </div>
-        <div class="bg-brand-bg border border-brand-border p-4 rounded-2xl text-center">
-          <div class="text-[9px] font-mono text-brand-text3 uppercase mb-2">Speed</div>
-          <div class="text-lg font-bold" style="color:${winner.color}">${winner.stats.speed}</div>
-        </div>
+      </div>`;
+  }
+
+  html += `<div class="result-actions">
+        <a href="/learn/${winnerId}" class="btn btn-primary" style="background:${winner.color}">📖 Deep Dive: ${winner.name}</a>
+        <a href="/explore?method=${winnerId}" class="btn btn-ghost">🔬 See in 3D</a>
+        <a href="/playground" class="btn btn-ghost">⚡ Playground</a>
       </div>
 
-      <div class="flex flex-wrap gap-3 pt-4">
-        <a href="/learn/${winnerId}" class="flex-grow btn-primary justify-center !py-3.5 !rounded-2xl" style="background:${winner.color}">📖 Full Guide: ${winner.name}</a>
-        <a href="/explore?method=${winnerId}" class="flex-grow btn-ghost justify-center !py-3.5 !rounded-2xl hover:!text-[${winner.color}] hover:!border-[${winner.color}]">🔬 See in 3D</a>
+      <div class="share-row">
+        <span class="share-label">Share your result:</span>
+        <button class="share-btn" onclick="copyResult('${winner.name}')">📋 Copy</button>
+        <button class="share-btn" onclick="tweetResult('${winner.name}')">𝕏 Tweet</button>
       </div>
     </div>
-  </div>
-  
-  <div class="text-center mt-10">
-    <button class="btn-ghost text-xs !px-8 !py-3 !rounded-xl" onclick="restart()">🔄 Start Over</button>
+  </div>`;
+
+  html += `<div class="restart-row">
+    <button class="btn btn-ghost" onclick="restart()" style="margin-top:16px">🔄 Start Over</button>
   </div>`;
 
   container.innerHTML = html;
+
+  // Animate confidence bar
+  setTimeout(() => {
+    document.querySelector('.confidence-fill').style.width = confidence + '%';
+  }, 100);
 }
 
-function selectOption(e, optionId, tags) {
-  const el = e.currentTarget;
-  if (el) el.classList.add('ring-2', 'ring-brand-accent', 'scale-[1.02]', 'bg-brand-bg3/50');
+// ═══════════════════════════════════════
+// LOGIC
+// ═══════════════════════════════════════
+function selectOption(optionId, tags) {
+  // Brief highlight animation
+  event.currentTarget.classList.add('selected');
 
   setTimeout(() => {
     answers.push({ question: QUESTIONS[currentStep].id, answer: optionId });
@@ -258,19 +434,27 @@ function selectOption(e, optionId, tags) {
     currentStep++;
 
     if (currentStep >= QUESTIONS.length) {
-      renderProgress();
+      // Show result
+      const bar = document.getElementById('progress');
+      bar.innerHTML = '';
+      for (let i = 0; i < QUESTIONS.length; i++) {
+        const step = document.createElement('div');
+        step.className = 'progress-step done';
+        bar.appendChild(step);
+      }
       renderResult();
     } else {
       renderProgress();
       renderQuestion();
     }
-  }, 250);
+  }, 200);
 }
 
 function goBack() {
   if (currentStep <= 0) return;
   currentStep--;
   const removed = answers.pop();
+  // Remove tags from the last answer
   const q = QUESTIONS[currentStep];
   const opt = q.options.find(o => o.id === removed.answer);
   if (opt) {
@@ -285,14 +469,18 @@ function goBack() {
 
 function computeScores() {
   const scores = { full: 0, lora: 0, qlora: 0, prefix: 0, adapters: 0, rlhf: 0 };
+
+  // Check all tag combinations
   for (const [ruleKey, ruleScores] of Object.entries(SCORING)) {
     const ruleTags = ruleKey.split('+');
-    if (ruleTags.every(t => allTags.includes(t))) {
+    const allMatch = ruleTags.every(t => allTags.includes(t));
+    if (allMatch) {
       for (const [method, points] of Object.entries(ruleScores)) {
         scores[method] = (scores[method] || 0) + points;
       }
     }
   }
+
   return scores;
 }
 
@@ -304,6 +492,19 @@ function restart() {
   renderQuestion();
 }
 
+function copyResult(methodName) {
+  const text = `The llmviz.studio guide recommended ${methodName} for my LLM fine-tuning project! Check it out: https://llmviz.studio/guide`;
+  navigator.clipboard.writeText(text);
+  event.target.textContent = '✓ Copied!';
+  setTimeout(() => event.target.textContent = '📋 Copy', 1500);
+}
+
+function tweetResult(methodName) {
+  const text = encodeURIComponent(`The llmviz.studio guide recommended ${methodName} for my LLM fine-tuning project! 🔬\n\nhttps://llmviz.studio/guide`);
+  window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
+}
+
+// Init
 renderProgress();
 renderQuestion();
 </script>

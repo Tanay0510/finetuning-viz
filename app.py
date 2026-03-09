@@ -210,14 +210,12 @@ def learn(method_id):
     return render_template("learn.html", method=method, deep=deep, methods=METHODS)
 
 @app.route("/guide")
-@login_required
 def guide():
     return render_template("guide.html", methods=METHODS)
 
-@app.route("/data")
-@login_required
-def data_prep():
-    return render_template("data.html", methods=METHODS)
+@app.route("/api/methods")
+def api_methods():
+    return jsonify(METHODS)
 
 if __name__ == "__main__":
     with app.app_context():

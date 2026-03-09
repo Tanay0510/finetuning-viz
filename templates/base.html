@@ -59,26 +59,15 @@
   </style>
   {% block head %}{% endblock %}
 </head>
-<body class="bg-brand-bg text-brand-text font-sans antialiased overflow-x-hidden">
-  <nav class="fixed top-0 left-0 right-0 z-[100] px-6 py-3.5 flex items-center justify-between bg-brand-bg/85 backdrop-blur-2xl border-b border-brand-border">
-    <a href="/" class="text-base font-bold tracking-tight flex items-center gap-2 group">
-      <span class="w-2 h-2 rounded-full bg-brand-accent shadow-[0_0_8px_var(--tw-shadow-color)] shadow-brand-accent group-hover:scale-125 transition-transform"></span> 
-      llmviz.studio
-    </a>
-    <div class="flex items-center gap-1 bg-brand-bg2/50 p-1 rounded-xl border border-brand-border">
-      <a href="/" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'home' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Home</a>
-      
-      {% if current_user.is_authenticated %}
-        <a href="/explore" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'explore' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Explorer</a>
-        <a href="/playground" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'playground' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Playground</a>
-        <a href="/guide" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'guide' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Guide</a>
-        <a href="/data" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'data' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Data</a>
-        <a href="/learn/lora" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'learn' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Learn</a>
-        <div class="w-px h-4 bg-brand-border mx-1"></div>
-        <a href="/logout" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold text-red-400 hover:bg-red-500/10 transition-all">Logout</a>
-      {% else %}
-        <a href="/login" class="px-4 py-1.5 rounded-lg text-[13px] font-semibold text-brand-accent hover:bg-brand-accent/10 transition-all">Sign In</a>
-      {% endif %}
+<body>
+  <nav class="nav">
+    <a href="/" class="nav-brand"><span class="dot"></span> llmviz.studio</a>
+    <div class="nav-links">
+      <a href="/" class="{{ 'active' if active_page == 'home' else '' }}">Home</a>
+      <a href="/explore" class="{{ 'active' if active_page == 'explore' else '' }}">3D Explorer</a>
+      <a href="/playground" class="{{ 'active' if active_page == 'playground' else '' }}">Playground</a>
+      <a href="/learn/lora" class="{{ 'active' if active_page == 'learn' else '' }}">Learn</a>
+      <a href="/guide" class="{{ 'active' if active_page == 'guide' else '' }}">Guide</a>
     </div>
   </nav>
   <main class="pt-[60px] min-h-screen">
