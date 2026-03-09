@@ -1,0 +1,374 @@
+{% extends "base.html" %}
+{% set active_page = "playground" %}
+{% block title %}GPU Playground — llmviz.studio{% endblock %}
+
+{% block head %}
+<style>
+  .pg-header{padding:40px 0 32px}
+  .pg-header h1{font-size:32px;font-weight:700;letter-spacing:-0.03em;margin-bottom:6px}
+  .pg-header p{color:var(--text2);font-size:14px}
+
+  .pg-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding-bottom:60px}
+  @media(max-width:800px){.pg-grid{grid-template-columns:1fr}}
+
+  .panel{background:var(--bg2);border-radius:14px;padding:24px;border:1px solid var(--border)}
+  .panel-title{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:16px}
+
+  /* Selector buttons */
+  .selector{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:18px}
+  .sel-btn{padding:6px 12px;border-radius:6px;font-size:12px;font-weight:500;border:1.5px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all 0.2s;font-family:inherit}
+  .sel-btn:hover{border-color:var(--text3);color:var(--text)}
+  .sel-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(59,130,246,0.08)}
+  .sel-btn .tier{font-size:9px;color:var(--text3);display:block;font-family:'JetBrains Mono',monospace}
+
+  /* Sliders */
+  .slider-group{margin-bottom:16px}
+  .slider-label{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px}
+  .slider-label .val{font-family:'JetBrains Mono',monospace;color:var(--accent)}
+  input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--border);border-radius:2px;outline:none}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer;box-shadow:0 0 8px rgba(59,130,246,0.3)}
+
+  /* Results */
+  .result-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .result-card{background:var(--bg);border-radius:10px;padding:14px;border:1px solid var(--border)}
+  .result-card .label{margin-bottom:4px}
+  .result-card .value{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600}
+  .result-card .value.fit{color:#22c55e}
+  .result-card .value.tight{color:#f59e0b}
+  .result-card .value.nofit{color:#ef4444}
+  .result-card .sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+  /* VRAM bar */
+  .vram-bar-wrap{margin-bottom:16px}
+  .vram-bar-header{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}
+  .vram-bar{height:24px;border-radius:6px;background:var(--bg);overflow:hidden;position:relative;border:1px solid var(--border)}
+  .vram-segment{height:100%;float:left;transition:width 0.4s ease}
+  .vram-limit{position:absolute;top:0;bottom:0;width:2px;background:#fff;opacity:0.6;transition:left 0.4s}
+  .vram-legend{display:flex;gap:14px;margin-top:8px;flex-wrap:wrap}
+  .vram-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2);font-family:'JetBrains Mono',monospace}
+  .vram-legend-dot{width:10px;height:10px;border-radius:2px}
+
+  /* Verdict */
+  .verdict{padding:16px;border-radius:10px;margin-bottom:16px;font-size:13px;line-height:1.7}
+  .verdict.yes{background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:#86efac}
+  .verdict.maybe{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#fcd34d}
+  .verdict.no{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);color:#fca5a5}
+
+  /* Code block */
+  .code-block{background:#0a0e16;border-radius:10px;padding:16px;border:1px solid var(--border);overflow-x:auto;margin-top:12px;position:relative}
+  .code-block pre{font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.7;color:#c9d1d9;margin:0;white-space:pre}
+  .code-block .copy-btn{position:absolute;top:8px;right:8px;padding:4px 10px;border-radius:4px;background:var(--bg3);border:1px solid var(--border);color:var(--text3);font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace}
+  .code-block .copy-btn:hover{color:var(--text);border-color:var(--text3)}
+
+  /* Method tabs */
+  .method-tabs{display:flex;gap:4px;margin-bottom:16px;flex-wrap:wrap}
+  .method-tab{padding:6px 12px;border-radius:6px;font-size:12px;border:1px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all 0.2s;font-family:inherit}
+  .method-tab.active{border-color:var(--m-color,var(--accent));color:var(--m-color,var(--accent));background:rgba(59,130,246,0.06)}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+  <div class="pg-header fade-up">
+    <h1>⚡ GPU Playground</h1>
+    <p>Calculate VRAM, training cost, and feasibility for any method + model + hardware combo</p>
+  </div>
+
+  <div class="pg-grid">
+    <!-- LEFT: Controls -->
+    <div>
+      <!-- Method -->
+      <div class="panel fade-up">
+        <div class="panel-title">Fine-Tuning Method</div>
+        <div class="method-tabs" id="method-tabs">
+          {% for m in methods %}
+          <button class="method-tab{% if loop.first %} active{% endif %}" data-id="{{ m.id }}" style="--m-color:{{ m.color }}" onclick="selectMethod('{{ m.id }}')">{{ m.emoji }} {{ m.short }}</button>
+          {% endfor %}
+        </div>
+        <div id="method-desc" style="font-size:13px;color:var(--text2);line-height:1.7"></div>
+      </div>
+
+      <!-- Model Size -->
+      <div class="panel fade-up delay-1" style="margin-top:12px">
+        <div class="panel-title">Model Size</div>
+        <div class="selector" id="model-selector">
+          {% for ms in models %}
+          <button class="sel-btn{% if ms.id == '7b' %} active{% endif %}" data-id="{{ ms.id }}" onclick="selectModel('{{ ms.id }}')">{{ ms.name }}</button>
+          {% endfor %}
+        </div>
+
+        <!-- LoRA-specific sliders -->
+        <div id="lora-controls">
+          <div class="slider-group">
+            <div class="slider-label"><span>LoRA Rank (r)</span><span class="val" id="rank-val">16</span></div>
+            <input type="range" id="rank-slider" min="4" max="128" step="4" value="16" oninput="updateCalc()"/>
+          </div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label"><span>Batch Size</span><span class="val" id="batch-val">4</span></div>
+          <input type="range" id="batch-slider" min="1" max="64" step="1" value="4" oninput="updateCalc()"/>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-label"><span>Sequence Length</span><span class="val" id="seq-val">2048</span></div>
+          <input type="range" id="seq-slider" min="512" max="8192" step="512" value="2048" oninput="updateCalc()"/>
+        </div>
+      </div>
+
+      <!-- GPU -->
+      <div class="panel fade-up delay-2" style="margin-top:12px">
+        <div class="panel-title">Your Hardware</div>
+        <div class="selector" id="gpu-selector">
+          {% for g in gpus %}
+          <button class="sel-btn{% if g.id == 'a100_80' %} active{% endif %}" data-id="{{ g.id }}" onclick="selectGPU('{{ g.id }}')">
+            {{ g.name }}
+            <span class="tier">{{ g.vram }}GB · {{ g.tier }}</span>
+          </button>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div>
+      <div class="panel fade-up delay-1">
+        <div class="panel-title">VRAM Breakdown</div>
+
+        <!-- VRAM visual bar -->
+        <div class="vram-bar-wrap">
+          <div class="vram-bar-header">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px"><span id="vram-used">0</span> GB used</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3)"><span id="vram-total">80</span> GB available</span>
+          </div>
+          <div class="vram-bar" id="vram-bar">
+            <div class="vram-segment" id="seg-weights" style="background:#3B82F6"></div>
+            <div class="vram-segment" id="seg-grads" style="background:#8B5CF6"></div>
+            <div class="vram-segment" id="seg-optim" style="background:#EC4899"></div>
+            <div class="vram-segment" id="seg-act" style="background:#F59E0B"></div>
+            <div class="vram-limit" id="vram-limit-line"></div>
+          </div>
+          <div class="vram-legend">
+            <div class="vram-legend-item"><div class="vram-legend-dot" style="background:#3B82F6"></div>Weights</div>
+            <div class="vram-legend-item"><div class="vram-legend-dot" style="background:#8B5CF6"></div>Gradients</div>
+            <div class="vram-legend-item"><div class="vram-legend-dot" style="background:#EC4899"></div>Optimizer</div>
+            <div class="vram-legend-item"><div class="vram-legend-dot" style="background:#F59E0B"></div>Activations</div>
+          </div>
+        </div>
+
+        <!-- Result cards -->
+        <div class="result-grid">
+          <div class="result-card">
+            <div class="label">Total VRAM</div>
+            <div class="value" id="res-vram">—</div>
+            <div class="sub" id="res-vram-sub"></div>
+          </div>
+          <div class="result-card">
+            <div class="label">Trainable Params</div>
+            <div class="value" id="res-params">—</div>
+            <div class="sub" id="res-params-pct"></div>
+          </div>
+          <div class="result-card">
+            <div class="label">Checkpoint Size</div>
+            <div class="value" id="res-ckpt">—</div>
+            <div class="sub" id="res-ckpt-sub"></div>
+          </div>
+          <div class="result-card">
+            <div class="label">Est. Cost / Epoch</div>
+            <div class="value" id="res-cost">—</div>
+            <div class="sub" id="res-cost-sub"></div>
+          </div>
+        </div>
+
+        <!-- Verdict -->
+        <div class="verdict" id="verdict"></div>
+
+        <!-- Code snippet -->
+        <div class="panel-title" style="margin-top:16px">Quick Start Code</div>
+        <div class="code-block">
+          <button class="copy-btn" onclick="copyCode()">Copy</button>
+          <pre id="code-snippet"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const METHODS = {{ methods | tojson }};
+const GPUS = {{ gpus | tojson }};
+const MODELS = {{ models | tojson }};
+
+let state = {
+  method: 'full',
+  model: '7b',
+  gpu: 'a100_80',
+  rank: 16,
+  batch: 4,
+  seq: 2048,
+};
+
+function selectMethod(id) {
+  state.method = id;
+  document.querySelectorAll('.method-tab').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+  const m = METHODS.find(x => x.id === id);
+  document.getElementById('method-desc').textContent = m.desc;
+  // Show/hide LoRA controls
+  const lc = document.getElementById('lora-controls');
+  lc.style.display = ['lora','qlora'].includes(id) ? 'block' : 'none';
+  updateCalc();
+}
+
+function selectModel(id) {
+  state.model = id;
+  document.querySelectorAll('#model-selector .sel-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+  updateCalc();
+}
+
+function selectGPU(id) {
+  state.gpu = id;
+  document.querySelectorAll('#gpu-selector .sel-btn').forEach(b => b.classList.toggle('active', b.dataset.id === id));
+  updateCalc();
+}
+
+function updateCalc() {
+  state.rank = parseInt(document.getElementById('rank-slider').value);
+  state.batch = parseInt(document.getElementById('batch-slider').value);
+  state.seq = parseInt(document.getElementById('seq-slider').value);
+  document.getElementById('rank-val').textContent = state.rank;
+  document.getElementById('batch-val').textContent = state.batch;
+  document.getElementById('seq-val').textContent = state.seq;
+
+  const m = METHODS.find(x => x.id === state.method);
+  const gpu = GPUS.find(x => x.id === state.gpu);
+  const mdl = MODELS.find(x => x.id === state.model);
+
+  // ── VRAM Calculation ──
+  const P = mdl.params; // billions
+  const D = mdl.d;
+  const L = mdl.layers;
+  const R = state.rank;
+  const B = state.batch;
+  const S = state.seq;
+
+  let weightsGB, gradsGB, optimGB, actGB, trainableParams, totalParams;
+  totalParams = P * 1e9;
+
+  if (state.method === 'full' || state.method === 'rlhf') {
+    weightsGB = P * 2; // BF16
+    gradsGB = P * 2;
+    optimGB = P * 8; // Adam: 2 x FP32 states
+    actGB = (B * S * D * L * 2) / 1e9; // rough activation estimate
+    trainableParams = totalParams;
+    if (state.method === 'rlhf') {
+      weightsGB *= 2; // policy + reference
+      gradsGB *= 1; // only policy gets grads
+    }
+  } else if (state.method === 'lora') {
+    weightsGB = P * 2; // frozen BF16
+    const adapterParams = 4 * L * 2 * D * R; // Q,K,V,O x layers x 2(A+B) x d x r
+    trainableParams = adapterParams;
+    gradsGB = (adapterParams * 2) / 1e9;
+    optimGB = (adapterParams * 8) / 1e9;
+    actGB = (B * S * D * L * 2) / 1e9;
+  } else if (state.method === 'qlora') {
+    weightsGB = P * 0.5; // NF4
+    const adapterParams = 4 * L * 2 * D * R;
+    trainableParams = adapterParams;
+    gradsGB = (adapterParams * 2) / 1e9;
+    optimGB = (adapterParams * 8) / 1e9;
+    actGB = (B * S * D * L * 2) / 1e9;
+  } else if (state.method === 'prefix') {
+    weightsGB = P * 2;
+    const prefixTokens = 20;
+    trainableParams = prefixTokens * L * 2 * D;
+    gradsGB = (trainableParams * 2) / 1e9;
+    optimGB = (trainableParams * 8) / 1e9;
+    actGB = (B * S * D * L * 2) / 1e9;
+  } else if (state.method === 'adapters') {
+    weightsGB = P * 2;
+    const bottleneck = 64;
+    trainableParams = 2 * L * 2 * D * bottleneck;
+    gradsGB = (trainableParams * 2) / 1e9;
+    optimGB = (trainableParams * 8) / 1e9;
+    actGB = (B * S * D * L * 2) / 1e9;
+  }
+
+  actGB = Math.min(actGB, 20); // cap activation estimate
+  const totalVRAM = weightsGB + gradsGB + optimGB + actGB;
+  const gpuVRAM = gpu.vram;
+  const fits = totalVRAM <= gpuVRAM;
+  const tight = totalVRAM > gpuVRAM * 0.85 && totalVRAM <= gpuVRAM;
+  const pct = (trainableParams / totalParams * 100);
+
+  // ── Update UI ──
+  document.getElementById('vram-used').textContent = totalVRAM.toFixed(1);
+  document.getElementById('vram-total').textContent = gpuVRAM;
+
+  const maxBar = Math.max(totalVRAM, gpuVRAM) * 1.1;
+  document.getElementById('seg-weights').style.width = (weightsGB/maxBar*100)+'%';
+  document.getElementById('seg-grads').style.width = (gradsGB/maxBar*100)+'%';
+  document.getElementById('seg-optim').style.width = (optimGB/maxBar*100)+'%';
+  document.getElementById('seg-act').style.width = (actGB/maxBar*100)+'%';
+  document.getElementById('vram-limit-line').style.left = (gpuVRAM/maxBar*100)+'%';
+
+  const cls = fits ? (tight ? 'tight' : 'fit') : 'nofit';
+  document.getElementById('res-vram').className = 'value ' + cls;
+  document.getElementById('res-vram').textContent = totalVRAM.toFixed(1) + ' GB';
+  document.getElementById('res-vram-sub').textContent = `W:${weightsGB.toFixed(1)} G:${gradsGB.toFixed(1)} O:${optimGB.toFixed(1)} A:${actGB.toFixed(1)}`;
+
+  const fmtParams = trainableParams >= 1e9 ? (trainableParams/1e9).toFixed(1)+'B' :
+                     trainableParams >= 1e6 ? (trainableParams/1e6).toFixed(1)+'M' :
+                     (trainableParams/1e3).toFixed(0)+'K';
+  document.getElementById('res-params').textContent = fmtParams;
+  document.getElementById('res-params').className = 'value';
+  document.getElementById('res-params-pct').textContent = pct >= 1 ? pct.toFixed(0)+'% of total' : pct.toFixed(3)+'% of total';
+
+  const ckptGB = (trainableParams * 2) / 1e9; // BF16
+  const ckptStr = ckptGB >= 1 ? ckptGB.toFixed(1)+' GB' : (ckptGB*1024).toFixed(0)+' MB';
+  document.getElementById('res-ckpt').textContent = ckptStr;
+  document.getElementById('res-ckpt-sub').textContent = trainableParams >= totalParams ? 'Full model checkpoint' : 'Adapter only';
+
+  // Cost estimate (rough: assume 1hr per 1B params on H100, scale by GPU tflops)
+  const h100Tflops = 989;
+  const baseHours = P * 0.5; // rough baseline: 0.5hr per B params on H100
+  const scaledHours = baseHours * (h100Tflops / gpu.tflops);
+  const methodMultiplier = {full:1, lora:0.4, qlora:0.5, prefix:0.35, adapters:0.45, rlhf:2.5}[state.method];
+  const estHours = scaledHours * methodMultiplier;
+  const estCost = gpu.cost > 0 ? estHours * gpu.cost : 0;
+  document.getElementById('res-cost').textContent = gpu.cost > 0 ? '$'+estCost.toFixed(0) : 'Local';
+  document.getElementById('res-cost-sub').textContent = `~${estHours.toFixed(1)} hours`;
+
+  // Verdict
+  const v = document.getElementById('verdict');
+  if (fits && !tight) {
+    v.className = 'verdict yes';
+    v.innerHTML = `<strong>✓ Fits comfortably.</strong> ${(gpuVRAM - totalVRAM).toFixed(1)}GB headroom on ${gpu.name}. You can increase batch size or sequence length.`;
+  } else if (tight) {
+    v.className = 'verdict maybe';
+    v.innerHTML = `<strong>⚠ Tight fit.</strong> Only ${(gpuVRAM - totalVRAM).toFixed(1)}GB headroom. Consider gradient checkpointing or reducing batch size.`;
+  } else {
+    v.className = 'verdict no';
+    v.innerHTML = `<strong>✗ Doesn't fit.</strong> ${totalVRAM.toFixed(1)}GB needed but ${gpu.name} only has ${gpuVRAM}GB. Try QLoRA, reduce model size, or use more GPUs.`;
+  }
+
+  // Code
+  document.getElementById('code-snippet').textContent = m.code;
+}
+
+function copyCode() {
+  const code = document.getElementById('code-snippet').textContent;
+  navigator.clipboard.writeText(code);
+  const btn = document.querySelector('.copy-btn');
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 1500);
+}
+
+// Init
+selectMethod('full');
+selectModel('7b');
+selectGPU('a100_80');
+</script>
+{% endblock %}

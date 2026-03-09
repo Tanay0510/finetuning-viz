@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% set active_page = "home" %}
+{% block title %}llmviz.studio — LLM Fine-Tuning Visualized{% endblock %}
+
+{% block head %}
+<style>
+  /* Hero */
+  .hero{position:relative;min-height:92vh;display:flex;flex-direction:column;justify-content:center;overflow:hidden}
+  .hero-bg{position:absolute;inset:0;z-index:0}
+  .hero-bg canvas{width:100%;height:100%}
+  .hero-content{position:relative;z-index:2;padding:0 20px}
+  .hero-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--bg2);font-size:11px;color:var(--text2);margin-bottom:20px;font-family:'JetBrains Mono',monospace}
+  .hero-badge .pulse{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(34,197,94,0.4)}50%{opacity:0.7;box-shadow:0 0 0 6px rgba(34,197,94,0)}}
+  .hero h1{font-size:clamp(36px,6vw,64px);font-weight:700;letter-spacing:-0.04em;line-height:1.1;max-width:700px;margin-bottom:16px}
+  .hero h1 .gradient{background:linear-gradient(135deg,#60A5FA,#A78BFA,#F472B6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .hero p{font-size:17px;color:var(--text2);max-width:520px;line-height:1.7;margin-bottom:32px;font-weight:400}
+  .hero-actions{display:flex;gap:10px;flex-wrap:wrap}
+
+  /* Method cards */
+  .methods-section{padding:80px 0 60px}
+  .section-header{margin-bottom:40px}
+  .section-header h2{font-size:28px;font-weight:700;letter-spacing:-0.03em;margin-bottom:8px}
+  .section-header p{color:var(--text2);font-size:15px}
+
+  .method-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:768px){.method-grid{grid-template-columns:1fr}}
+
+  .method-card{
+    background:var(--bg2);border-radius:14px;padding:24px;
+    border:1px solid var(--border);cursor:pointer;
+    transition:all 0.35s cubic-bezier(0.22,1,0.36,1);
+    position:relative;overflow:hidden;
+  }
+  .method-card::before{
+    content:'';position:absolute;top:0;left:0;right:0;height:2px;
+    background:var(--card-color);opacity:0;transition:opacity 0.3s;
+  }
+  .method-card:hover{border-color:var(--card-color);transform:translateY(-3px);box-shadow:0 8px 30px rgba(0,0,0,0.3)}
+  .method-card:hover::before{opacity:1}
+  .card-emoji{font-size:28px;margin-bottom:12px;display:block}
+  .card-name{font-size:16px;font-weight:700;margin-bottom:4px}
+  .card-tagline{font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5}
+  .card-formula{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--card-color);background:var(--bg);padding:6px 10px;border-radius:6px;margin-bottom:12px;overflow-x:auto;white-space:nowrap}
+  .card-stats{display:flex;gap:12px;flex-wrap:wrap}
+  .card-stat{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3)}
+  .card-stat span{color:var(--text2)}
+
+  /* Features strip */
+  .features{padding:60px 0 80px;border-top:1px solid var(--border)}
+  .feature-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+  @media(max-width:768px){.feature-grid{grid-template-columns:1fr}}
+  .feature{padding:24px;border-radius:12px;background:var(--bg2);border:1px solid var(--border)}
+  .feature-icon{font-size:24px;margin-bottom:12px}
+  .feature h3{font-size:15px;font-weight:600;margin-bottom:6px}
+  .feature p{font-size:13px;color:var(--text2);line-height:1.65}
+
+  /* Footer */
+  .footer{padding:40px 0;border-top:1px solid var(--border);text-align:center}
+  .footer p{font-size:12px;color:var(--text3)}
+  .footer a{color:var(--text2)}
+  .footer a:hover{color:var(--text)}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-bg"><canvas id="hero-canvas"></canvas></div>
+  <div class="container hero-content">
+    <div class="hero-badge fade-up"><span class="pulse"></span> Open source · Free forever</div>
+    <h1 class="fade-up delay-1">LLM Fine-Tuning<br/><span class="gradient">Visualized in 3D</span></h1>
+    <p class="fade-up delay-2">Interactive explorations of LoRA, QLoRA, DPO, and more. See how each method works, calculate GPU costs, and find the right approach for your project.</p>
+    <div class="hero-actions fade-up delay-3">
+      <a href="/explore" class="btn btn-primary">🔬 3D Explorer</a>
+      <a href="/playground" class="btn btn-ghost">⚡ GPU Playground</a>
+    </div>
+  </div>
+</section>
+
+<!-- Methods -->
+<section class="methods-section">
+  <div class="container">
+    <div class="section-header fade-up">
+      <h2>Six Methods, One Visual Language</h2>
+      <p>Click any card to explore its 3D visualization</p>
+    </div>
+    <div class="method-grid">
+      {% for m in methods %}
+      <a href="/explore?method={{ m.id }}" class="method-card fade-up delay-{{ loop.index % 4 }}" style="--card-color:{{ m.color }}">
+        <span class="card-emoji">{{ m.emoji }}</span>
+        <div class="card-name" style="color:{{ m.color }}">{{ m.name }}</div>
+        <div class="card-tagline">{{ m.tagline }}</div>
+        <div class="card-formula">{{ m.formula }}</div>
+        <div class="card-stats">
+          <div class="card-stat">Params: <span>{{ m.stats.params }}</span></div>
+          <div class="card-stat">VRAM 7B: <span>{{ m.stats.vram_7b }}</span></div>
+          <div class="card-stat">Save: <span>{{ m.stats.checkpoint }}</span></div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+  <div class="container">
+    <div class="section-header fade-up">
+      <h2>Built for Engineers</h2>
+      <p>More than just pretty graphics</p>
+    </div>
+    <div class="feature-grid">
+      <div class="feature fade-up">
+        <div class="feature-icon">🔬</div>
+        <h3>3D Neural Network Viz</h3>
+        <p>Interactive Three.js scenes showing actual architecture — frozen weights, adapters, gradient flow. Drag to orbit, scroll to zoom.</p>
+      </div>
+      <div class="feature fade-up delay-1">
+        <div class="feature-icon">⚡</div>
+        <h3>GPU Playground</h3>
+        <p>Select your hardware, pick a model size, adjust LoRA rank — see real-time VRAM estimates, training cost, and whether your setup fits.</p>
+      </div>
+      <div class="feature fade-up delay-2">
+        <div class="feature-icon">📋</div>
+        <h3>Code Snippets</h3>
+        <p>Copy-paste HuggingFace PEFT code for every method. Real, runnable examples — not pseudocode.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="container">
+    <p>Built by <a href="https://github.com/Tanaybh" target="_blank">Tanay Bhardwaj</a> · <a href="https://huggingface.co/Tanaybh" target="_blank">HuggingFace</a></p>
+  </div>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Animated gradient mesh background
+(function(){
+  const c = document.getElementById('hero-canvas');
+  if(!c) return;
+  const ctx = c.getContext('2d');
+  let w, h;
+  function resize(){
+    w = c.width = c.offsetWidth * (window.devicePixelRatio > 1 ? 1.5 : 1);
+    h = c.height = c.offsetHeight * (window.devicePixelRatio > 1 ? 1.5 : 1);
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const blobs = [
+    {x:0.2, y:0.3, r:300, color:'rgba(59,130,246,0.08)', vx:0.0002, vy:0.0001},
+    {x:0.7, y:0.5, r:350, color:'rgba(167,139,250,0.06)', vx:-0.0001, vy:0.0002},
+    {x:0.5, y:0.8, r:250, color:'rgba(244,114,182,0.05)', vx:0.00015, vy:-0.00015},
+    {x:0.3, y:0.6, r:200, color:'rgba(16,185,129,0.04)', vx:-0.0002, vy:0.0001},
+  ];
+
+  function draw(){
+    ctx.clearRect(0,0,w,h);
+    const t = Date.now();
+    blobs.forEach(b => {
+      b.x += b.vx; b.y += b.vy;
+      if(b.x < 0 || b.x > 1) b.vx *= -1;
+      if(b.y < 0 || b.y > 1) b.vy *= -1;
+      const grd = ctx.createRadialGradient(b.x*w, b.y*h, 0, b.x*w, b.y*h, b.r * (w/1000));
+      grd.addColorStop(0, b.color);
+      grd.addColorStop(1, 'transparent');
+      ctx.fillStyle = grd;
+      ctx.fillRect(0,0,w,h);
+    });
+
+    // Grid lines (very subtle)
+    ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+    ctx.lineWidth = 0.5;
+    const gridSize = 60;
+    for(let x = 0; x < w; x += gridSize){
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+    }
+    for(let y = 0; y < h; y += gridSize){
+      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+})();
+</script>
+{% endblock %}
