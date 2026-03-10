@@ -25,43 +25,165 @@
 
 {% block content %}
 <div class="container mx-auto px-5 py-16 max-w-6xl">
-    <!-- ... Rest of the HTML body from your previous correct version ... -->
+  <div class="mb-12 fade-up">
+    <h1 class="text-4xl font-bold tracking-tight mb-3">⚡ GPU Playground</h1>
+    <p class="text-brand-text2 text-lg">Calculate VRAM, training cost, and feasibility for any method + model + hardware combo.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-[1.1fr,1fr] gap-8">
+    <!-- LEFT: Rack Controls -->
+    <div class="space-y-6">
+      <!-- Module 1: Method -->
+      <div class="rack-panel fade-up">
+        <span class="rack-label">Fine-Tuning Method</span>
+        <div class="flex flex-wrap gap-2 mb-6" id="method-tabs">
+          {% for m in methods %}
+          <button class="px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center gap-2" 
+                  data-id="{{ m.id }}" 
+                  onclick="setState('method', '{{ m.id }}', '#method-tabs')">
+            <span class="text-base">{{ m.emoji }}</span> {{ m.short }}
+          </button>
+          {% endfor %}
+        </div>
+        <div id="method-desc" class="text-sm text-brand-text2 leading-relaxed bg-brand-bg/50 p-4 rounded-xl border border-brand-border/50 italic"></div>
+      </div>
+
+      <!-- Module 2: Model & Parameters -->
+      <div class="rack-panel fade-up delay-1">
+        <span class="rack-label">Model Configuration</span>
+        <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-8" id="model-selector">
+          {% for ms in models %}
+          <button class="flex flex-col items-center justify-center p-3 rounded-xl border font-mono text-[11px] transition-all duration-300" 
+                  data-id="{{ ms.id }}" 
+                  onclick="setState('model', '{{ ms.id }}', '#model-selector')">
+            <span class="text-xs font-bold">{{ ms.name }}</span>
+          </button>
+          {% endfor %}
+        </div>
+        <div class="space-y-8" id="lora-controls">
+          <div>
+            <div class="flex justify-between items-end mb-3">
+              <span class="text-xs font-bold text-brand-text uppercase tracking-wider">LoRA Rank (r)</span>
+              <span class="font-mono text-lg font-bold text-brand-accent" id="rank-val">16</span>
+            </div>
+            <input type="range" id="rank-slider" min="4" max="128" step="4" value="16" class="studio-slider" oninput="updateCalc()"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Settings -->
+      <div class="rack-panel fade-up delay-2">
+          <span class="rack-label">Advanced Training Settings</span>
+          <div class="space-y-6">
+              <div>
+                  <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Training Precision</span>
+                  <div class="grid grid-cols-3 gap-2" id="precision-selector">
+                      <button onclick="setState('precision', 'bf16', '#precision-selector')" data-id="bf16" class="precision-btn">BF16</button>
+                      <button onclick="setState('precision', 'fp16', '#precision-selector')" data-id="fp16" class="precision-btn">FP16</button>
+                      <button onclick="setState('precision', 'fp32', '#precision-selector')" data-id="fp32" class="precision-btn">FP32</button>
+                  </div>
+              </div>
+              <div>
+                  <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Optimizer</span>
+                  <div class="grid grid-cols-2 gap-2" id="optimizer-selector">
+                      <button onclick="setState('optimizer', 'paged_adamw_8bit', '#optimizer-selector')" data-id="paged_adamw_8bit" class="optimizer-btn">PagedAdamW (8-bit)</button>
+                      <button onclick="setState('optimizer', 'adamw_32bit', '#optimizer-selector')" data-id="adamw_32bit" class="optimizer-btn">AdamW (32-bit)</button>
+                  </div>
+              </div>
+              <div>
+                  <div class="flex justify-between items-center">
+                      <span class="text-xs font-bold text-brand-text uppercase tracking-wider">Gradient Checkpointing</span>
+                      <button onclick="toggleState('grad_checkpoint', 'grad-checkpoint-btn')" id="grad-checkpoint-btn" class="grad-checkpoint-btn">
+                          <span class="grad-checkpoint-handle"></span>
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
+      
+      <!-- Hardware & Cluster -->
+      <div class="rack-panel fade-up delay-3">
+        <span class="rack-label">Target Hardware & Cluster</span>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8" id="gpu-selector">
+          {% for g in gpus %}
+          <button class="group p-4 rounded-xl border text-left transition-all duration-300" 
+                  data-id="{{ g.id }}" 
+                  onclick="setState('gpu', '{{ g.id }}', '#gpu-selector')">
+            <div class="text-[13px] font-bold group-hover:text-brand-text transition-colors">{{ g.name }}</div>
+            <div class="font-mono text-[9px] text-brand-text3 mt-1 uppercase tracking-tight">{{ g.vram }}GB</div>
+          </button>
+          {% endfor %}
+        </div>
+        <div class="space-y-8">
+          <div>
+            <div class="flex justify-between items-end mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-brand-text uppercase tracking-wider">GPU Count</span>
+                <span class="px-2 py-0.5 rounded bg-brand-accent/20 text-brand-accent font-mono text-[9px]">DISTRIBUTED</span>
+              </div>
+              <span class="font-mono text-lg font-bold text-brand-accent" id="gpu-count-val">1</span>
+            </div>
+            <input type="range" id="gpu-count-slider" min="1" max="8" step="1" value="1" class="studio-slider" oninput="updateCalc()"/>
+          </div>
+          <div>
+            <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Sharding Strategy</span>
+            <div class="grid grid-cols-3 sm:grid-cols-5 gap-2" id="sharding-selector">
+              <button onclick="setState('sharding', 'none', '#sharding-selector')" data-id="none" class="sharding-btn">NONE</button>
+              <button onclick="setState('sharding', 'zero1', '#sharding-selector')" data-id="zero1" class="sharding-btn">ZeRO-1</button>
+              <button onclick="setState('sharding', 'zero2', '#sharding-selector')" data-id="zero2" class="sharding-btn">ZeRO-2</button>
+              <button onclick="setState('sharding', 'zero3', '#sharding-selector')" data-id="zero3" class="sharding-btn">ZeRO-3</button>
+              <button onclick="setState('sharding', 'fsdp', '#sharding-selector')" data-id="fsdp" class="sharding-btn">FSDP</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- RIGHT: Master Output -->
     <div class="space-y-6">
       <div class="rack-panel h-full border-brand-accent/20 fade-up delay-1 bg-gradient-to-br from-brand-bg2 to-brand-bg">
         <span class="rack-label">Master Level Output</span>
-        <!-- VRAM Meter -->
         <div class="mb-10">
           <div class="flex justify-between items-end mb-3 font-mono">
             <div>
-              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">VRAM Signal / GPU</span>
+              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">VRAM / GPU</span>
               <span class="text-2xl font-bold" id="vram-used">0</span> <span class="text-brand-text3">GB</span>
             </div>
             <div class="text-right">
-              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">Device VRAM</span>
+              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">Device Limit</span>
               <span class="text-sm font-bold opacity-60"><span id="vram-total">80</span> GB</span>
             </div>
           </div>
           <div class="h-8 bg-black/40 rounded-xl border border-brand-border2 p-1.5 flex gap-1 relative overflow-hidden group">
-            <div class="h-full rounded-md transition-all duration-500 shadow-[0_0_15px_rgba(59,130,246,0.3)]" id="seg-weights" style="background:#3B82F6"></div>
-            <div class="h-full rounded-md transition-all duration-500 shadow-[0_0_15px_rgba(139,92,246,0.3)]" id="seg-grads" style="background:#8B5CF6"></div>
-            <div class="h-full rounded-md transition-all duration-500 shadow-[0_0_15px_rgba(236,72,153,0.3)]" id="seg-optim" style="background:#EC4899"></div>
-            <div class="h-full rounded-md transition-all duration-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]" id="seg-act" style="background:#F59E0B"></div>
+            <div class="h-full rounded-md transition-all duration-500" id="seg-weights" style="background:#3B82F6"></div>
+            <div class="h-full rounded-md transition-all duration-500" id="seg-grads" style="background:#8B5CF6"></div>
+            <div class="h-full rounded-md transition-all duration-500" id="seg-optim" style="background:#EC4899"></div>
+            <div class="h-full rounded-md transition-all duration-500" id="seg-act" style="background:#F59E0B"></div>
             <div class="absolute inset-y-0 w-1 bg-white shadow-[0_0_10px_#fff] z-10 transition-all duration-500" id="vram-limit-line"></div>
           </div>
           <div class="flex flex-wrap gap-x-6 gap-y-2 mt-4 font-mono text-[9px] uppercase tracking-widest text-brand-text3">
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#3B82F6]"></span> Weights</div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#8B5CF6]"></span> Gradients</div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#EC4899]"></span> Optimizer</div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span> Activations</div>
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#3B82F6]"></span>W</div>
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#8B5CF6]"></span>G</div>
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#EC4899]"></span>O</div>
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span>A</div>
           </div>
         </div>
-        <!-- ... rest of the telemetry grid, verdict, and code terminal ... -->
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <div class="stat-card"><span class="rack-label !mb-2">Total Load</span><div class="text-3xl font-bold font-mono" id="res-vram">—</div></div>
+          <div class="stat-card"><span class="rack-label !mb-2">Trainable</span><div class="text-3xl font-bold font-mono" id="res-params">—</div></div>
+        </div>
+        <div class="p-6 rounded-2xl border mb-10 transition-colors duration-500" id="verdict"></div>
+        <div class="mb-10">
+          <div class="flex justify-between items-center mb-3">
+            <span class="rack-label !mb-0">Export</span>
+            <button onclick="openRecipeModal()" class="px-3 py-1 rounded-lg bg-brand-accent/20 border border-brand-accent/30 text-brand-accent text-[10px] font-bold hover:bg-brand-accent hover:text-white transition-all">⚙️ GET RECIPE (YAML)</button>
+          </div>
+        </div>
       </div>
     </div>
+  </div>
 </div>
-
-<!-- ... Recipe Modal HTML ... -->
+<!-- ... Modal and other HTML ... -->
 {% endblock %}
 
 {% block scripts %}
@@ -80,6 +202,9 @@ function setState(key, value, selectorPrefix) {
     document.querySelectorAll(`${selectorPrefix} button`).forEach(b => {
         b.classList.toggle('active', b.dataset.id === value);
     });
+    if (key === 'method') {
+      document.getElementById('method-desc').textContent = METHODS.find(x => x.id === value).desc;
+    }
     updateCalc();
 }
 
@@ -90,11 +215,13 @@ function toggleState(key, btnId) {
 }
 
 function updateCalc() {
+  // Update state from sliders
   state.rank = parseInt(document.getElementById('rank-slider').value);
   state.batch = parseInt(document.getElementById('batch-slider').value);
   state.seq = parseInt(document.getElementById('seq-slider').value);
   state.gpu_count = parseInt(document.getElementById('gpu-count-slider').value);
   
+  // Update UI text values
   document.getElementById('rank-val').textContent = state.rank;
   document.getElementById('batch-val').textContent = state.batch;
   document.getElementById('seq-val').textContent = state.seq;
@@ -105,13 +232,7 @@ function updateCalc() {
   const gpu = GPUS.find(x => x.id === state.gpu);
   const mdl = MODELS.find(x => x.id === state.model);
 
-  const P = mdl.params;
-  const D = mdl.d;
-  const L = mdl.layers;
-  const R = state.rank;
-  const B = state.batch;
-  const S = state.seq;
-  const N = state.gpu_count;
+  const P = mdl.params, D = mdl.d, L = mdl.layers, R = state.rank, B = state.batch, S = state.seq, N = state.gpu_count;
   const precisionBytes = {'bf16': 2, 'fp16': 2, 'fp32': 4}[state.precision];
   const optimizerBytes = state.optimizer === 'adamw_32bit' ? 8 : 1;
 
@@ -146,24 +267,52 @@ function updateCalc() {
 }
 
 function updateUI(totalVRAM, mem, params, gpu) {
-    // This function is simplified for brevity but contains all the document.getElementById calls
-    // to update the VRAM bar, result cards, and verdict text based on the calculated values.
+    const gpuVRAM = gpu.vram;
+    const fits = totalVRAM <= gpuVRAM;
+    const tight = totalVRAM > gpuVRAM * 0.85 && fits;
+
     document.getElementById('vram-used').textContent = totalVRAM.toFixed(1);
-    // ... etc.
+    document.getElementById('vram-total').textContent = gpuVRAM;
+    document.getElementById('vram-limit-line').style.left = `${(gpuVRAM / Math.max(totalVRAM, gpuVRAM) * 1.1) * 100}%`;
+    
+    ['weights', 'grads', 'optim', 'act'].forEach(key => {
+        document.getElementById(`seg-${key}`).style.width = `${(mem[`${key}GB`] / Math.max(totalVRAM, gpuVRAM) * 1.1) * 100}%`;
+    });
+
+    const resVRAM = document.getElementById('res-vram');
+    resVRAM.textContent = totalVRAM.toFixed(1) + ' GB';
+    resVRAM.style.color = fits ? (tight ? '#f59e0b' : '#3B82F6') : '#ef4444';
+
+    const fmtParams = params.trainableParams >= 1e9 ? (params.trainableParams/1e9).toFixed(1)+'B' : (params.trainableParams/1e6).toFixed(1)+'M';
+    document.getElementById('res-params').textContent = fmtParams;
+    
+    const v = document.getElementById('verdict');
+    if (fits && !tight) {
+      v.className = 'p-6 rounded-2xl border bg-green-500/5 border-green-500/20 text-green-400 text-sm';
+      v.innerHTML = `✓ Fits comfortably.`;
+    } else if (tight) {
+      v.className = 'p-6 rounded-2xl border bg-yellow-500/5 border-yellow-500/20 text-yellow-400 text-sm';
+      v.innerHTML = `⚠ Tight fit.`;
+    } else {
+      v.className = 'p-6 rounded-2xl border bg-red-500/5 border-red-500/20 text-red-400 text-sm';
+      v.innerHTML = `✗ Doesn't fit.`;
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Correctly initialize all UI elements to match the default state
     Object.keys(state).forEach(key => {
-        const el = document.querySelector(`[onclick*="${key}"]`)?.closest('.active') 
-                || document.querySelector(`#${key}-selector .active`) 
-                || (key === 'grad_checkpoint' && document.getElementById('grad-checkpoint-btn'));
-        if (el) el.classList.remove('active');
-
-        const newActive = document.querySelector(`[data-id='${state[key]}']`) 
-                      || (key === 'grad_checkpoint' && state[key] && document.getElementById('grad-checkpoint-btn'));
-        if(newActive) newActive.classList.add('active');
+        const value = state[key];
+        if (typeof value === 'boolean') {
+            document.getElementById(`${key.replace('_', '-')}-btn`)?.classList.toggle('active', value);
+        } else {
+            const selector = `#${key.replace('_', '-')}-selector`;
+            document.querySelectorAll(`${selector} button`).forEach(b => {
+                b.classList.toggle('active', b.dataset.id === value);
+            });
+        }
     });
+    // Set initial description text
+    document.getElementById('method-desc').textContent = METHODS.find(x => x.id === state.method).desc;
     updateCalc();
 });
 </script>
