@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+{% set active_page = "attention" %}
+{% block title %}Attention Visualizer — llmviz.studio{% endblock %}
+
+{% block head %}
+<style type="text/tailwindcss">
+  @layer components {
+    .token-node {
+      @apply absolute px-3 py-1.5 bg-brand-bg2/80 backdrop-blur-md border border-brand-border rounded-xl text-[11px] font-mono font-bold text-brand-text cursor-pointer transition-all duration-300 hover:border-brand-accent hover:scale-110 select-none;
+    }
+    .token-node.active {
+      @apply border-brand-accent bg-brand-accent/20 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)];
+    }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-5 py-12 max-w-6xl">
+  <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-6 fade-up">
+    <div>
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-[10px] font-mono font-bold text-brand-accent mb-4 uppercase tracking-widest">
+        <span class="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></span>
+        Self-Attention Activation Maps
+      </div>
+      <h1 class="text-4xl font-bold tracking-tight mb-2">🔍 Attention Visualizer</h1>
+      <p class="text-brand-text2 text-lg">Watch how every word in your sentence "attends" to every other word</p>
+    </div>
+  </div>
+
+  <!-- Main Viewport -->
+  <div class="relative group fade-up delay-1">
+    <div class="relative rounded-[40px] overflow-hidden border border-brand-border bg-[#020408] shadow-[0_0_80px_rgba(0,0,0,0.5)] aspect-[16/9] md:aspect-auto md:h-[600px]">
+      
+      <!-- Input Overlay -->
+      <div class="absolute top-8 left-8 right-8 z-30">
+        <div class="flex gap-3 max-w-2xl mx-auto">
+            <input type="text" id="attention-input" value="The quick brown fox jumps over the lazy dog" 
+                   class="flex-grow bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl px-6 py-4 text-sm text-white focus:outline-none focus:border-brand-accent transition-all shadow-2xl"
+                   placeholder="Type a sentence to visualize attention...">
+            <button onclick="visualizeAttention()" class="btn-primary !rounded-2xl !px-8">ANALYZE</button>
+        </div>
+      </div>
+
+      <div class="absolute top-28 left-1/2 -translate-x-1/2 z-10 text-[10px] font-mono text-brand-text3 uppercase tracking-[0.3em] opacity-50">
+        Hover over tokens to see activation threads
+      </div>
+
+      <!-- 3D Tokens Container (HTML Projections) -->
+      <div id="token-container" class="absolute inset-0 pointer-events-none z-20"></div>
+
+      <canvas id="three-canvas" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
+    </div>
+
+    <!-- Data Insights -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+      <div class="terminal-box fade-up delay-2">
+        <div class="hud-label text-brand-accent">Attention Weight</div>
+        <p class="text-brand-text2 text-sm leading-relaxed">Line thickness represents the <strong>Softmax score</strong> between Query and Key vectors. Brighter lines indicate stronger context relationships.</p>
+      </div>
+      <div class="terminal-box fade-up delay-3">
+        <div class="hud-label text-brand-accent">Relational Map</div>
+        <p class="text-brand-text2 text-sm leading-relaxed">Notice how verbs attend to their subjects, and pronouns attend to the nouns they replace. This is the "soul" of LLM logic.</p>
+      </div>
+      <div class="terminal-box fade-up delay-4">
+        <div class="hud-label text-brand-accent">Global Context</div>
+        <p class="text-brand-text2 text-sm leading-relaxed">Unlike RNNs, self-attention allows every token to see every other token regardless of distance in the sentence.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let scene, camera, renderer, dead = false;
+let camAngle = {th: 0, ph: 0.1, d: 25};
+let mouse = {dn:false, lx:0, ly:0};
+let tokens = [];
+let attentionLines = [];
+let activeTokenIndex = -1;
+
+function initThree() {
+  const cvs = document.getElementById('three-canvas');
+  const container = cvs.parentElement;
+  
+  scene = new THREE.Scene();
+  scene.fog = new THREE.Fog(0x020408, 10, 50);
+
+  camera = new THREE.PerspectiveCamera(40, container.clientWidth/container.clientHeight, 0.1, 1000);
+  
+  renderer = new THREE.WebGLRenderer({canvas:cvs, antialias:true, alpha: true});
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  
+  scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+  const dl = new THREE.DirectionalLight(0xffffff, 1); dl.position.set(5, 10, 5); scene.add(dl);
+
+  cvs.addEventListener('mousedown', e=>{mouse={dn:true,lx:e.clientX,ly:e.clientY}});
+  window.addEventListener('mousemove', e=>{
+    if(!mouse.dn) return;
+    camAngle.th-=(e.clientX-mouse.lx)*0.005;
+    camAngle.ph=Math.max(-0.5,Math.min(0.8,camAngle.ph+(e.clientY-mouse.ly)*0.005));
+    mouse.lx=e.clientX; mouse.ly=e.clientY;
+  });
+  window.addEventListener('mouseup', ()=>{mouse.dn=false});
+
+  window.addEventListener('resize', () => {
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
+}
+
+function visualizeAttention() {
+    const text = document.getElementById('attention-input').value;
+    const words = text.split(' ');
+    const container = document.getElementById('token-container');
+    
+    // Clear
+    container.innerHTML = '';
+    tokens = [];
+    attentionLines.forEach(l => scene.remove(l));
+    attentionLines = [];
+
+    const spacing = 3;
+    const startX = -(words.length - 1) * spacing / 2;
+
+    words.forEach((word, i) => {
+        const pos = new THREE.Vector3(startX + i * spacing, 0, 0);
+        
+        // Visual Node in 3D (invisible, just for reference)
+        const node = new THREE.Object3D();
+        node.position.copy(pos);
+        scene.add(node);
+
+        // UI Element
+        const el = document.createElement('div');
+        el.className = 'token-node pointer-events-auto';
+        el.textContent = word;
+        el.onmouseenter = () => highlightAttention(i);
+        el.onmouseleave = () => resetAttention();
+        container.appendChild(el);
+
+        tokens.push({ el, node, pos });
+    });
+}
+
+function highlightAttention(index) {
+    activeTokenIndex = index;
+    tokens.forEach((t, i) => {
+        t.el.classList.toggle('active', i === index);
+    });
+
+    // Remove old lines
+    attentionLines.forEach(l => scene.remove(l));
+    attentionLines = [];
+
+    const source = tokens[index];
+    
+    tokens.forEach((target, i) => {
+        if (i === index) return;
+
+        // Simulate some fake attention weights (closer words or random)
+        const weight = Math.random() * 0.8 + 0.1;
+        
+        const curve = new THREE.QuadraticBezierCurve3(
+            source.pos,
+            new THREE.Vector3((source.pos.x + target.pos.x)/2, 4 * weight, (source.pos.z + target.pos.z)/2 + 2),
+            target.pos
+        );
+
+        const points = curve.getPoints(20);
+        const geo = new THREE.BufferGeometry().setFromPoints(points);
+        const mat = new THREE.LineBasicMaterial({
+            color: 0x3B82F6,
+            transparent: true,
+            opacity: weight * 0.6,
+            linewidth: weight * 5
+        });
+
+        const line = new THREE.Line(geo, mat);
+        scene.add(line);
+        attentionLines.push(line);
+    });
+}
+
+function resetAttention() {
+    activeTokenIndex = -1;
+    tokens.forEach(t => t.el.classList.remove('active'));
+    attentionLines.forEach(l => scene.remove(l));
+    attentionLines = [];
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    if(!mouse.dn) camAngle.th += 0.001;
+    camera.position.x = Math.sin(camAngle.th)*Math.cos(camAngle.ph)*camAngle.d;
+    camera.position.y = Math.sin(camAngle.ph)*camAngle.d + 2;
+    camera.position.z = Math.cos(camAngle.th)*Math.cos(camAngle.ph)*camAngle.d;
+    camera.lookAt(0,0,0);
+
+    // Update projections
+    tokens.forEach(t => {
+        const p = t.pos.clone().project(camera);
+        if (p.z > 1) {
+            t.el.style.display = 'none';
+        } else {
+            t.el.style.display = 'block';
+            const x = (p.x + 1) * renderer.domElement.clientWidth / 2;
+            const y = (-p.y + 1) * renderer.domElement.clientHeight / 2;
+            t.el.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+        }
+    });
+
+    renderer.render(scene, camera);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initThree();
+    visualizeAttention();
+    animate();
+});
+</script>
+{% endblock %}
