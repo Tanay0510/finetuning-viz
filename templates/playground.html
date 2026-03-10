@@ -12,11 +12,13 @@
     .stat-card { @apply bg-brand-bg border border-brand-border p-5 rounded-2xl; }
     .sharding-btn, .precision-btn, .optimizer-btn { @apply py-2 rounded-lg border border-brand-border text-[10px] font-bold font-mono transition-all duration-300 text-brand-text3 uppercase hover:border-brand-text3; }
     .sharding-btn.active, .precision-btn.active, .optimizer-btn.active { @apply border-brand-accent bg-brand-accent/10 text-brand-accent shadow-[0_0_10px_rgba(59,130,246,0.2)]; }
-    .grad-checkpoint-btn { @apply w-12 h-6 rounded-full p-1 transition-colors duration-300; }
+    .grad-checkpoint-btn { @apply w-12 h-6 rounded-full p-1 transition-colors duration-300 flex items-center; }
     .grad-checkpoint-btn.active { @apply bg-brand-accent; }
     .grad-checkpoint-btn:not(.active) { @apply bg-brand-border; }
     .grad-checkpoint-handle { @apply block w-4 h-4 rounded-full bg-white transition-transform duration-300; }
     .grad-checkpoint-btn.active .grad-checkpoint-handle { @apply translate-x-6; }
+    .recipe-tab { @apply px-4 py-2 rounded-xl text-xs font-bold border border-brand-border text-brand-text3 transition-all; }
+    .recipe-tab.active { @apply border-brand-accent bg-brand-accent/10 text-brand-accent; }
   }
 </style>
 {% endblock %}
@@ -25,20 +27,19 @@
 <div class="container mx-auto px-5 py-16 max-w-6xl">
   <div class="mb-12 fade-up">
     <h1 class="text-4xl font-bold tracking-tight mb-3">⚡ GPU Playground</h1>
-    <p class="text-brand-text2 text-lg">Calculate VRAM, training cost, and feasibility for any method + model + hardware combo.</p>
+    <p class="text-brand-text2 text-lg">Calculate VRAM, training cost, and feasibility for any combo.</p>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-[1.1fr,1fr] gap-8">
     <!-- LEFT: Rack Controls -->
     <div class="space-y-6">
-      <!-- Module 1: Method -->
       <div class="rack-panel fade-up">
         <span class="rack-label">Fine-Tuning Method</span>
-        <div class="flex flex-wrap gap-2 mb-6" id="method-selector">
+        <div class="flex flex-wrap gap-2 mb-6" id="method-tabs">
           {% for m in methods %}
           <button class="px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center gap-2" 
                   data-id="{{ m.id }}" 
-                  onclick="setState('method', '{{ m.id }}', '#method-selector')">
+                  onclick="setState('method', '{{ m.id }}', '#method-tabs')">
             <span class="text-base">{{ m.emoji }}</span> {{ m.short }}
           </button>
           {% endfor %}
@@ -46,7 +47,6 @@
         <div id="method-desc" class="text-sm text-brand-text2 leading-relaxed bg-brand-bg/50 p-4 rounded-xl border border-brand-border/50 italic"></div>
       </div>
 
-      <!-- Module 2: Model & Parameters -->
       <div class="rack-panel fade-up delay-1">
         <span class="rack-label">Model Configuration</span>
         <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-8" id="model-selector">
@@ -67,14 +67,29 @@
             <input type="range" id="rank-slider" min="4" max="128" step="4" value="16" class="studio-slider" oninput="updateCalc()"/>
           </div>
         </div>
+        <div class="space-y-8 mt-8">
+          <div>
+            <div class="flex justify-between items-end mb-3">
+              <span class="text-xs font-bold text-brand-text uppercase tracking-wider">Batch Size</span>
+              <span class="font-mono text-lg font-bold text-brand-accent" id="batch-val">4</span>
+            </div>
+            <input type="range" id="batch-slider" min="1" max="64" step="1" value="4" class="studio-slider" oninput="updateCalc()"/>
+          </div>
+          <div>
+            <div class="flex justify-between items-end mb-3">
+              <span class="text-xs font-bold text-brand-text uppercase tracking-wider">Sequence Length</span>
+              <span class="font-mono text-lg font-bold text-brand-accent" id="seq-val">2048</span>
+            </div>
+            <input type="range" id="seq-slider" min="512" max="8192" step="512" value="2048" class="studio-slider" oninput="updateCalc()"/>
+          </div>
+        </div>
       </div>
 
-      <!-- Advanced Settings -->
       <div class="rack-panel fade-up delay-2">
-          <span class="rack-label">Advanced Training Settings</span>
+          <span class="rack-label">Advanced Settings</span>
           <div class="space-y-6">
               <div>
-                  <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Training Precision</span>
+                  <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Precision</span>
                   <div class="grid grid-cols-3 gap-2" id="precision-selector">
                       <button onclick="setState('precision', 'bf16', '#precision-selector')" data-id="bf16" class="precision-btn">BF16</button>
                       <button onclick="setState('precision', 'fp16', '#precision-selector')" data-id="fp16" class="precision-btn">FP16</button>
@@ -84,29 +99,24 @@
               <div>
                   <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Optimizer</span>
                   <div class="grid grid-cols-2 gap-2" id="optimizer-selector">
-                      <button onclick="setState('optimizer', 'paged_adamw_8bit', '#optimizer-selector')" data-id="paged_adamw_8bit" class="optimizer-btn">PagedAdamW (8-bit)</button>
-                      <button onclick="setState('optimizer', 'adamw_32bit', '#optimizer-selector')" data-id="adamw_32bit" class="optimizer-btn">AdamW (32-bit)</button>
+                      <button onclick="setState('optimizer', 'paged_adamw_8bit', '#optimizer-selector')" data-id="paged_adamw_8bit" class="optimizer-btn">8-bit</button>
+                      <button onclick="setState('optimizer', 'adamw_32bit', '#optimizer-selector')" data-id="adamw_32bit" class="optimizer-btn">32-bit</button>
                   </div>
               </div>
-              <div>
-                  <div class="flex justify-between items-center">
-                      <span class="text-xs font-bold text-brand-text uppercase tracking-wider">Gradient Checkpointing</span>
-                      <button onclick="toggleState('grad_checkpoint', 'grad-checkpoint-btn')" id="grad-checkpoint-btn" class="grad-checkpoint-btn">
-                          <span class="grad-checkpoint-handle"></span>
-                      </button>
-                  </div>
+              <div class="flex justify-between items-center">
+                  <span class="text-xs font-bold text-brand-text uppercase tracking-wider">Grad Checkpointing</span>
+                  <button onclick="toggleState('grad_checkpoint', 'grad-checkpoint-btn')" id="grad-checkpoint-btn" class="grad-checkpoint-btn active">
+                      <span class="grad-checkpoint-handle"></span>
+                  </button>
               </div>
           </div>
       </div>
       
-      <!-- Hardware & Cluster -->
       <div class="rack-panel fade-up delay-3">
-        <span class="rack-label">Target Hardware & Cluster</span>
+        <span class="rack-label">Hardware & Cluster</span>
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8" id="gpu-selector">
           {% for g in gpus %}
-          <button class="group p-4 rounded-xl border text-left transition-all duration-300" 
-                  data-id="{{ g.id }}" 
-                  onclick="setState('gpu', '{{ g.id }}', '#gpu-selector')">
+          <button class="group p-4 rounded-xl border text-left transition-all duration-300" data-id="{{ g.id }}" onclick="setState('gpu', '{{ g.id }}', '#gpu-selector')">
             <div class="text-[13px] font-bold">{{ g.name }}</div>
             <div class="font-mono text-[9px] text-brand-text3 mt-1">{{ g.vram }}GB</div>
           </button>
@@ -121,21 +131,90 @@
             <input type="range" id="gpu-count-slider" min="1" max="8" step="1" value="1" class="studio-slider" oninput="updateCalc()"/>
           </div>
           <div>
-            <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Sharding Strategy</span>
+            <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Sharding</span>
             <div class="grid grid-cols-3 sm:grid-cols-5 gap-2" id="sharding-selector">
               <button onclick="setState('sharding', 'none', '#sharding-selector')" data-id="none" class="sharding-btn">NONE</button>
-              <button onclick="setState('sharding', 'zero1', '#sharding-selector')" data-id="zero1" class="sharding-btn">ZeRO-1</button>
-              <button onclick="setState('sharding', 'zero2', '#sharding-selector')" data-id="zero2" class="sharding-btn">ZeRO-2</button>
-              <button onclick="setState('sharding', 'zero3', '#sharding-selector')" data-id="zero3" class="sharding-btn">ZeRO-3</button>
+              <button onclick="setState('sharding', 'zero1', '#sharding-selector')" data-id="zero1" class="sharding-btn">Z1</button>
+              <button onclick="setState('sharding', 'zero2', '#sharding-selector')" data-id="zero2" class="sharding-btn">Z2</button>
+              <button onclick="setState('sharding', 'zero3', '#sharding-selector')" data-id="zero3" class="sharding-btn">Z3</button>
               <button onclick="setState('sharding', 'fsdp', '#sharding-selector')" data-id="fsdp" class="sharding-btn">FSDP</button>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <!-- RIGHT SIDE (OUTPUT) -->
+
+    <!-- RIGHT: Master Output -->
     <div class="space-y-6">
-        <!-- ... output panel HTML ... -->
+      <div class="rack-panel h-full border-brand-accent/20 fade-up delay-1 bg-gradient-to-br from-brand-bg2 to-brand-bg">
+        <span class="rack-label">Master Level Output</span>
+        <div class="mb-10">
+          <div class="flex justify-between items-end mb-3 font-mono">
+            <div>
+              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">VRAM / GPU</span>
+              <span class="text-2xl font-bold" id="vram-used">0</span> <span class="text-brand-text3">GB</span>
+            </div>
+            <div class="text-right">
+              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">Limit</span>
+              <span class="text-sm font-bold opacity-60"><span id="vram-total">80</span> GB</span>
+            </div>
+          </div>
+          <div class="h-8 bg-black/40 rounded-xl border border-brand-border2 p-1.5 flex gap-1 relative overflow-hidden group">
+            <div class="h-full rounded-md transition-all duration-500" id="seg-weights" style="background:#3B82F6"></div>
+            <div class="h-full rounded-md transition-all duration-500" id="seg-grads" style="background:#8B5CF6"></div>
+            <div class="h-full rounded-md transition-all duration-500" id="seg-optim" style="background:#EC4899"></div>
+            <div class="h-full rounded-md transition-all duration-500" id="seg-act" style="background:#F59E0B"></div>
+            <div class="absolute inset-y-0 w-1 bg-white shadow-[0_0_10px_#fff] z-10 transition-all duration-500" id="vram-limit-line"></div>
+          </div>
+          <div class="flex flex-wrap gap-x-6 gap-y-2 mt-4 font-mono text-[9px] uppercase tracking-widest text-brand-text3">
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#3B82F6]"></span>W</div>
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#8B5CF6]"></span>G</div>
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#EC4899]"></span>O</div>
+            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span>A</div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-8">
+          <div class="stat-card"><span class="rack-label !mb-2">Total Load</span><div class="text-3xl font-bold font-mono" id="res-vram">—</div></div>
+          <div class="stat-card"><span class="rack-label !mb-2">Trainable</span><div class="text-3xl font-bold font-mono" id="res-params">—</div></div>
+        </div>
+        <div class="p-6 rounded-2xl border mb-10 transition-colors duration-500 text-center font-bold" id="verdict"></div>
+        <div class="mb-10 text-center">
+            <button onclick="openRecipeModal()" class="btn-primary w-full justify-center !py-4 shadow-xl">⚙️ EXPORT TRAINING RECIPE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recipe Modal -->
+<div id="recipe-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-5">
+  <div class="absolute inset-0 bg-brand-bg/80 backdrop-blur-xl" onclick="closeRecipeModal()"></div>
+  <div class="relative w-full max-w-2xl bg-brand-bg2 border border-brand-border rounded-[32px] shadow-2xl overflow-hidden fade-up">
+    <div class="p-8 border-b border-brand-border flex justify-between items-center bg-brand-bg3/50">
+      <div>
+        <h2 class="text-2xl font-bold tracking-tight">⚙️ Training Recipe</h2>
+        <p class="text-brand-text3 text-[10px] font-mono uppercase mt-1">YAML Config Auto-Generated</p>
+      </div>
+      <button onclick="closeRecipeModal()" class="text-brand-text3 hover:text-brand-text">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-8">
+        <div class="flex gap-2 mb-6" id="recipe-tabs">
+            <button onclick="switchRecipe('axolotl')" id="tab-axolotl" class="recipe-tab active">Axolotl</button>
+            <button onclick="switchRecipe('unsloth')" id="tab-unsloth" class="recipe-tab">Unsloth</button>
+            <button onclick="switchRecipe('hf')" id="tab-hf" class="recipe-tab">HF</button>
+        </div>
+        <div class="bg-black/60 rounded-2xl border border-brand-border p-6 font-mono relative group">
+            <button class="absolute top-4 right-4 px-3 py-1 rounded-md bg-brand-bg3 text-[10px] text-brand-text3 border border-brand-border2 hover:text-brand-text" onclick="copyRecipe()">Copy</button>
+            <div class="overflow-y-auto max-h-[300px]">
+                <pre id="recipe-content" class="text-[11px] leading-relaxed text-blue-100/70"></pre>
+            </div>
+        </div>
+        <div class="mt-8 flex justify-between items-center">
+            <p class="text-[10px] text-brand-text3 max-w-[300px]">Recipe dynamically mapped from Playground state.</p>
+            <button onclick="downloadRecipe()" class="btn-primary !py-2 !text-xs">Download .yaml</button>
+        </div>
     </div>
   </div>
 </div>
@@ -143,17 +222,153 @@
 
 {% block scripts %}
 <script>
-// ... state, setState, toggleState, updateCalc, updateUI functions ...
+const METHODS = {{ methods | tojson }};
+const GPUS = {{ gpus | tojson }};
+const MODELS = {{ models | tojson }};
+
+let state = {
+  method: 'lora', model: '7b', gpu: 'a100_80', gpu_count: 1, sharding: 'none',
+  rank: 16, batch: 4, seq: 2048, precision: 'bf16', optimizer: 'paged_adamw_8bit', grad_checkpoint: true,
+};
+
+function setState(key, value, selectorPrefix) {
+    state[key] = value;
+    document.querySelectorAll(`${selectorPrefix} button`).forEach(b => {
+        b.classList.toggle('active', b.dataset.id === value);
+    });
+    if (key === 'method') {
+      const m = METHODS.find(x => x.id === value);
+      document.getElementById('method-desc').textContent = m.desc;
+    }
+    updateCalc();
+}
+
+function toggleState(key, btnId) {
+    state[key] = !state[key];
+    document.getElementById(btnId).classList.toggle('active', state[key]);
+    updateCalc();
+}
+
+function updateCalc() {
+  state.rank = parseInt(document.getElementById('rank-slider').value);
+  state.batch = parseInt(document.getElementById('batch-slider').value);
+  state.seq = parseInt(document.getElementById('seq-slider').value);
+  state.gpu_count = parseInt(document.getElementById('gpu-count-slider').value);
+  
+  document.getElementById('rank-val').textContent = state.rank;
+  document.getElementById('batch-val').textContent = state.batch;
+  document.getElementById('seq-val').textContent = state.seq;
+  document.getElementById('gpu-count-val').textContent = state.gpu_count;
+  document.getElementById('lora-controls').style.display = ['lora','qlora','dora'].includes(state.method) ? 'block' : 'none';
+  
+  const m = METHODS.find(x => x.id === state.method);
+  const gpu = GPUS.find(x => x.id === state.gpu);
+  const mdl = MODELS.find(x => x.id === state.model);
+
+  const P = mdl.params, D = mdl.d, L = mdl.layers, R = state.rank, B = state.batch, S = state.seq, N = state.gpu_count;
+  const precisionBytes = {'bf16': 2, 'fp16': 2, 'fp32': 4}[state.precision];
+  const optimizerBytes = state.optimizer === 'adamw_32bit' ? 8 : 1;
+
+  let weightsGB, gradsGB, optimGB, actGB, trainableParams;
+  const totalParams = P * 1e9;
+
+  if (['full', 'rlhf', 'galore'].includes(state.method)) {
+    weightsGB = P * precisionBytes;
+    gradsGB = P * precisionBytes;
+    optimGB = (state.method === 'galore') ? (P * 0.25) : (P * optimizerBytes);
+    trainableParams = totalParams;
+  } else {
+    weightsGB = state.method === 'qlora' ? P * 0.5 : P * precisionBytes;
+    const adapterParams = (4 * L * 2 * D * R);
+    trainableParams = adapterParams;
+    gradsGB = (adapterParams * precisionBytes) / 1e9;
+    optimGB = (adapterParams * optimizerBytes) / 1e9;
+  }
+  
+  actGB = (B * S * D * L * precisionBytes) / 1e9;
+  if(state.grad_checkpoint) actGB *= 0.55;
+  actGB = Math.min(actGB, 25);
+
+  if (N > 1) {
+    if (state.sharding === 'zero1') optimGB /= N;
+    else if (state.sharding === 'zero2') { optimGB /= N; gradsGB /= N; }
+    else if (['zero3', 'fsdp'].includes(state.sharding)) { optimGB /= N; gradsGB /= N; weightsGB /= N; }
+  }
+
+  const totalVRAM = weightsGB + gradsGB + optimGB + actGB;
+  updateUI(totalVRAM, { weightsGB, gradsGB, optimGB, actGB }, { trainableParams, totalParams }, gpu);
+}
+
+function updateUI(totalVRAM, mem, params, gpu) {
+    const gpuVRAM = gpu.vram;
+    const fits = totalVRAM <= gpuVRAM;
+    const tight = totalVRAM > gpuVRAM * 0.85 && fits;
+
+    document.getElementById('vram-used').textContent = totalVRAM.toFixed(1);
+    document.getElementById('vram-total').textContent = gpuVRAM;
+    
+    const maxVal = Math.max(totalVRAM, gpuVRAM) * 1.1;
+    document.getElementById('vram-limit-line').style.left = `${(gpuVRAM / maxVal) * 100}%`;
+    document.getElementById('seg-weights').style.width = `${(mem.weightsGB / maxVal) * 100}%`;
+    document.getElementById('seg-grads').style.width = `${(mem.gradsGB / maxVal) * 100}%`;
+    document.getElementById('seg-optim').style.width = `${(mem.optimGB / maxVal) * 100}%`;
+    document.getElementById('seg-act').style.width = `${(mem.actGB / maxVal) * 100}%`;
+
+    const resVRAM = document.getElementById('res-vram');
+    resVRAM.textContent = totalVRAM.toFixed(1) + ' GB';
+    resVRAM.style.color = fits ? (tight ? '#f59e0b' : '#3B82F6') : '#ef4444';
+
+    const fmtParams = params.trainableParams >= 1e9 ? (params.trainableParams/1e9).toFixed(1)+'B' : (params.trainableParams/1e6).toFixed(1)+'M';
+    document.getElementById('res-params').textContent = fmtParams;
+    
+    const v = document.getElementById('verdict');
+    if (fits && !tight) {
+      v.className = 'p-6 rounded-2xl border bg-green-500/5 border-green-500/20 text-green-400 text-sm';
+      v.innerHTML = `✓ Fits comfortably.`;
+    } else if (tight) {
+      v.className = 'p-6 rounded-2xl border bg-yellow-500/5 border-yellow-500/20 text-yellow-400 text-sm';
+      v.innerHTML = `⚠ Tight fit.`;
+    } else {
+      v.className = 'p-6 rounded-2xl border bg-red-500/5 border-red-500/20 text-red-400 text-sm';
+      v.innerHTML = `✗ Doesn't fit.`;
+    }
+}
+
+// Recipe Framework
+let currentRecipeFramework = 'axolotl';
+function openRecipeModal() {
+  document.getElementById('recipe-modal').classList.remove('hidden');
+  switchRecipe('axolotl');
+}
+function closeRecipeModal() { document.getElementById('recipe-modal').classList.add('hidden'); }
+function switchRecipe(framework) {
+  currentRecipeFramework = framework;
+  document.querySelectorAll('.recipe-tab').forEach(b => b.classList.toggle('active', b.id === `tab-${framework}`));
+  document.getElementById('recipe-content').textContent = generateRecipe(framework);
+}
+function generateRecipe(fw) {
+  const m = METHODS.find(x => x.id === state.method);
+  return `base_model: meta-llama/Llama-2-7b-hf\nmethod: ${state.method.toUpperCase()}\nrank: ${state.rank}\nbatch_size: ${state.batch}\nseq_len: ${state.seq}\nprecision: ${state.precision}\noptimizer: ${state.optimizer}`;
+}
+function copyRecipe() {
+  navigator.clipboard.writeText(document.getElementById('recipe-content').textContent);
+}
+function downloadRecipe() {
+  const blob = new Blob([document.getElementById('recipe-content').textContent], { type: 'text/yaml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `training_recipe.yaml`;
+  a.click();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Correct Initialization
     Object.keys(state).forEach(key => {
         const value = state[key];
-        const selector = `#${key.replace('_', '-')}-selector`;
         if (typeof value === 'boolean') {
             document.getElementById(`${key.replace('_', '-')}-btn`)?.classList.toggle('active', value);
         } else {
-            document.querySelectorAll(`${selector} button`).forEach(b => {
-                b.classList.toggle('active', b.dataset.id === value);
+            document.querySelectorAll(`[data-id='${value}']`).forEach(b => {
+                if(b.parentElement.id.includes(key.replace('_', '-'))) b.classList.add('active');
             });
         }
     });
