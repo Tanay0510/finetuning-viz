@@ -277,11 +277,6 @@ def data_prep():
 def compare():
     return render_template("compare.html", methods=METHODS)
 
-@app.route("/attention")
-@login_required
-def attention():
-    return render_template("attention.html", methods=METHODS)
-
 @app.route("/api/methods")
 def api_methods():
     return jsonify(METHODS)
