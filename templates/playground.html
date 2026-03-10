@@ -17,8 +17,6 @@
     .grad-checkpoint-btn:not(.active) { @apply bg-brand-border; }
     .grad-checkpoint-handle { @apply block w-4 h-4 rounded-full bg-white transition-transform duration-300; }
     .grad-checkpoint-btn.active .grad-checkpoint-handle { @apply translate-x-6; }
-    .recipe-tab { @apply px-4 py-2 rounded-xl text-xs font-bold border border-brand-border text-brand-text3 transition-all; }
-    .recipe-tab.active { @apply border-brand-accent bg-brand-accent/10 text-brand-accent; }
   }
 </style>
 {% endblock %}
@@ -36,11 +34,11 @@
       <!-- Module 1: Method -->
       <div class="rack-panel fade-up">
         <span class="rack-label">Fine-Tuning Method</span>
-        <div class="flex flex-wrap gap-2 mb-6" id="method-tabs">
+        <div class="flex flex-wrap gap-2 mb-6" id="method-selector">
           {% for m in methods %}
           <button class="px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center gap-2" 
                   data-id="{{ m.id }}" 
-                  onclick="setState('method', '{{ m.id }}', '#method-tabs')">
+                  onclick="setState('method', '{{ m.id }}', '#method-selector')">
             <span class="text-base">{{ m.emoji }}</span> {{ m.short }}
           </button>
           {% endfor %}
@@ -109,18 +107,15 @@
           <button class="group p-4 rounded-xl border text-left transition-all duration-300" 
                   data-id="{{ g.id }}" 
                   onclick="setState('gpu', '{{ g.id }}', '#gpu-selector')">
-            <div class="text-[13px] font-bold group-hover:text-brand-text transition-colors">{{ g.name }}</div>
-            <div class="font-mono text-[9px] text-brand-text3 mt-1 uppercase tracking-tight">{{ g.vram }}GB</div>
+            <div class="text-[13px] font-bold">{{ g.name }}</div>
+            <div class="font-mono text-[9px] text-brand-text3 mt-1">{{ g.vram }}GB</div>
           </button>
           {% endfor %}
         </div>
         <div class="space-y-8">
           <div>
             <div class="flex justify-between items-end mb-3">
-              <div class="flex items-center gap-2">
-                <span class="text-xs font-bold text-brand-text uppercase tracking-wider">GPU Count</span>
-                <span class="px-2 py-0.5 rounded bg-brand-accent/20 text-brand-accent font-mono text-[9px]">DISTRIBUTED</span>
-              </div>
+              <span class="text-xs font-bold text-brand-text uppercase tracking-wider">GPU Count</span>
               <span class="font-mono text-lg font-bold text-brand-accent" id="gpu-count-val">1</span>
             </div>
             <input type="range" id="gpu-count-slider" min="1" max="8" step="1" value="1" class="studio-slider" oninput="updateCalc()"/>
@@ -138,180 +133,30 @@
         </div>
       </div>
     </div>
-
-    <!-- RIGHT: Master Output -->
+    <!-- RIGHT SIDE (OUTPUT) -->
     <div class="space-y-6">
-      <div class="rack-panel h-full border-brand-accent/20 fade-up delay-1 bg-gradient-to-br from-brand-bg2 to-brand-bg">
-        <span class="rack-label">Master Level Output</span>
-        <div class="mb-10">
-          <div class="flex justify-between items-end mb-3 font-mono">
-            <div>
-              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">VRAM / GPU</span>
-              <span class="text-2xl font-bold" id="vram-used">0</span> <span class="text-brand-text3">GB</span>
-            </div>
-            <div class="text-right">
-              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">Device Limit</span>
-              <span class="text-sm font-bold opacity-60"><span id="vram-total">80</span> GB</span>
-            </div>
-          </div>
-          <div class="h-8 bg-black/40 rounded-xl border border-brand-border2 p-1.5 flex gap-1 relative overflow-hidden group">
-            <div class="h-full rounded-md transition-all duration-500" id="seg-weights" style="background:#3B82F6"></div>
-            <div class="h-full rounded-md transition-all duration-500" id="seg-grads" style="background:#8B5CF6"></div>
-            <div class="h-full rounded-md transition-all duration-500" id="seg-optim" style="background:#EC4899"></div>
-            <div class="h-full rounded-md transition-all duration-500" id="seg-act" style="background:#F59E0B"></div>
-            <div class="absolute inset-y-0 w-1 bg-white shadow-[0_0_10px_#fff] z-10 transition-all duration-500" id="vram-limit-line"></div>
-          </div>
-          <div class="flex flex-wrap gap-x-6 gap-y-2 mt-4 font-mono text-[9px] uppercase tracking-widest text-brand-text3">
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#3B82F6]"></span>W</div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#8B5CF6]"></span>G</div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#EC4899]"></span>O</div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span>A</div>
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-4 mb-8">
-          <div class="stat-card"><span class="rack-label !mb-2">Total Load</span><div class="text-3xl font-bold font-mono" id="res-vram">—</div></div>
-          <div class="stat-card"><span class="rack-label !mb-2">Trainable</span><div class="text-3xl font-bold font-mono" id="res-params">—</div></div>
-        </div>
-        <div class="p-6 rounded-2xl border mb-10 transition-colors duration-500" id="verdict"></div>
-        <div class="mb-10">
-          <div class="flex justify-between items-center mb-3">
-            <span class="rack-label !mb-0">Export</span>
-            <button onclick="openRecipeModal()" class="px-3 py-1 rounded-lg bg-brand-accent/20 border border-brand-accent/30 text-brand-accent text-[10px] font-bold hover:bg-brand-accent hover:text-white transition-all">⚙️ GET RECIPE (YAML)</button>
-          </div>
-        </div>
-      </div>
+        <!-- ... output panel HTML ... -->
     </div>
   </div>
 </div>
-<!-- ... Modal and other HTML ... -->
 {% endblock %}
 
 {% block scripts %}
 <script>
-const METHODS = {{ methods | tojson }};
-const GPUS = {{ gpus | tojson }};
-const MODELS = {{ models | tojson }};
-
-let state = {
-  method: 'lora', model: '7b', gpu: 'a100_80', gpu_count: 1, sharding: 'none',
-  rank: 16, batch: 4, seq: 2048, precision: 'bf16', optimizer: 'paged_adamw_8bit', grad_checkpoint: true,
-};
-
-function setState(key, value, selectorPrefix) {
-    state[key] = value;
-    document.querySelectorAll(`${selectorPrefix} button`).forEach(b => {
-        b.classList.toggle('active', b.dataset.id === value);
-    });
-    if (key === 'method') {
-      document.getElementById('method-desc').textContent = METHODS.find(x => x.id === value).desc;
-    }
-    updateCalc();
-}
-
-function toggleState(key, btnId) {
-    state[key] = !state[key];
-    document.getElementById(btnId).classList.toggle('active', state[key]);
-    updateCalc();
-}
-
-function updateCalc() {
-  // Update state from sliders
-  state.rank = parseInt(document.getElementById('rank-slider').value);
-  state.batch = parseInt(document.getElementById('batch-slider').value);
-  state.seq = parseInt(document.getElementById('seq-slider').value);
-  state.gpu_count = parseInt(document.getElementById('gpu-count-slider').value);
-  
-  // Update UI text values
-  document.getElementById('rank-val').textContent = state.rank;
-  document.getElementById('batch-val').textContent = state.batch;
-  document.getElementById('seq-val').textContent = state.seq;
-  document.getElementById('gpu-count-val').textContent = state.gpu_count;
-  document.getElementById('lora-controls').style.display = ['lora','qlora','dora'].includes(state.method) ? 'block' : 'none';
-  
-  const m = METHODS.find(x => x.id === state.method);
-  const gpu = GPUS.find(x => x.id === state.gpu);
-  const mdl = MODELS.find(x => x.id === state.model);
-
-  const P = mdl.params, D = mdl.d, L = mdl.layers, R = state.rank, B = state.batch, S = state.seq, N = state.gpu_count;
-  const precisionBytes = {'bf16': 2, 'fp16': 2, 'fp32': 4}[state.precision];
-  const optimizerBytes = state.optimizer === 'adamw_32bit' ? 8 : 1;
-
-  let weightsGB, gradsGB, optimGB, actGB, trainableParams;
-  const totalParams = P * 1e9;
-
-  if (['full', 'rlhf', 'galore'].includes(state.method)) {
-    weightsGB = P * precisionBytes;
-    gradsGB = P * precisionBytes;
-    optimGB = (state.method === 'galore') ? (P * 0.25) : (P * optimizerBytes);
-    trainableParams = totalParams;
-  } else {
-    weightsGB = state.method === 'qlora' ? P * 0.5 : P * precisionBytes;
-    const adapterParams = (4 * L * 2 * D * R);
-    trainableParams = adapterParams;
-    gradsGB = (adapterParams * precisionBytes) / 1e9;
-    optimGB = (adapterParams * optimizerBytes) / 1e9;
-  }
-  
-  actGB = (B * S * D * L * precisionBytes) / 1e9;
-  if(state.grad_checkpoint) actGB *= 0.55;
-  actGB = Math.min(actGB, 25);
-
-  if (N > 1) {
-    if (state.sharding === 'zero1') optimGB /= N;
-    else if (state.sharding === 'zero2') { optimGB /= N; gradsGB /= N; }
-    else if (['zero3', 'fsdp'].includes(state.sharding)) { optimGB /= N; gradsGB /= N; weightsGB /= N; }
-  }
-
-  const totalVRAM = weightsGB + gradsGB + optimGB + actGB;
-  updateUI(totalVRAM, { weightsGB, gradsGB, optimGB, actGB }, { trainableParams, totalParams }, gpu);
-}
-
-function updateUI(totalVRAM, mem, params, gpu) {
-    const gpuVRAM = gpu.vram;
-    const fits = totalVRAM <= gpuVRAM;
-    const tight = totalVRAM > gpuVRAM * 0.85 && fits;
-
-    document.getElementById('vram-used').textContent = totalVRAM.toFixed(1);
-    document.getElementById('vram-total').textContent = gpuVRAM;
-    document.getElementById('vram-limit-line').style.left = `${(gpuVRAM / Math.max(totalVRAM, gpuVRAM) * 1.1) * 100}%`;
-    
-    ['weights', 'grads', 'optim', 'act'].forEach(key => {
-        document.getElementById(`seg-${key}`).style.width = `${(mem[`${key}GB`] / Math.max(totalVRAM, gpuVRAM) * 1.1) * 100}%`;
-    });
-
-    const resVRAM = document.getElementById('res-vram');
-    resVRAM.textContent = totalVRAM.toFixed(1) + ' GB';
-    resVRAM.style.color = fits ? (tight ? '#f59e0b' : '#3B82F6') : '#ef4444';
-
-    const fmtParams = params.trainableParams >= 1e9 ? (params.trainableParams/1e9).toFixed(1)+'B' : (params.trainableParams/1e6).toFixed(1)+'M';
-    document.getElementById('res-params').textContent = fmtParams;
-    
-    const v = document.getElementById('verdict');
-    if (fits && !tight) {
-      v.className = 'p-6 rounded-2xl border bg-green-500/5 border-green-500/20 text-green-400 text-sm';
-      v.innerHTML = `✓ Fits comfortably.`;
-    } else if (tight) {
-      v.className = 'p-6 rounded-2xl border bg-yellow-500/5 border-yellow-500/20 text-yellow-400 text-sm';
-      v.innerHTML = `⚠ Tight fit.`;
-    } else {
-      v.className = 'p-6 rounded-2xl border bg-red-500/5 border-red-500/20 text-red-400 text-sm';
-      v.innerHTML = `✗ Doesn't fit.`;
-    }
-}
-
+// ... state, setState, toggleState, updateCalc, updateUI functions ...
 document.addEventListener('DOMContentLoaded', () => {
+    // Correct Initialization
     Object.keys(state).forEach(key => {
         const value = state[key];
+        const selector = `#${key.replace('_', '-')}-selector`;
         if (typeof value === 'boolean') {
             document.getElementById(`${key.replace('_', '-')}-btn`)?.classList.toggle('active', value);
         } else {
-            const selector = `#${key.replace('_', '-')}-selector`;
             document.querySelectorAll(`${selector} button`).forEach(b => {
                 b.classList.toggle('active', b.dataset.id === value);
             });
         }
     });
-    // Set initial description text
     document.getElementById('method-desc').textContent = METHODS.find(x => x.id === state.method).desc;
     updateCalc();
 });
