@@ -193,12 +193,16 @@ function downloadRecipe() { /* ... download logic ... */ }
 
 // --- Initialization ---
 document.addEventListener('DOMContentLoaded', () => {
-    selectMethod('lora');
-    selectModel('7b');
-    selectGPU('a100_80');
-    selectPrecision('bf16');
-    selectOptimizer('paged_adamw_8bit');
-    toggleGradCheckpoint(); // to set initial state correctly
-    toggleGradCheckpoint(); // toggle back
+    // Set initial active buttons based on default state
+    document.querySelector(`#method-tabs button[data-id='${state.method}']`)?.classList.add('active');
+    document.querySelector(`#model-selector button[data-id='${state.model}']`)?.classList.add('active');
+    document.querySelector(`#gpu-selector button[data-id='${state.gpu}']`)?.classList.add('active');
+    document.querySelector(`#precision-selector button[data-id='${state.precision}']`)?.classList.add('active');
+    document.querySelector(`#optimizer-selector button[data-id='${state.optimizer}']`)?.classList.add('active');
+    document.querySelector(`#sharding-selector button[data-id='${state.sharding}']`)?.classList.add('active');
+    document.getElementById('grad-checkpoint-btn').classList.toggle('active', state.grad_checkpoint);
+    
+    // Initial calculation
+    selectMethod(state.method);
 });
 </script>
