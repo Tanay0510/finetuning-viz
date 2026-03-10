@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>{% block title %}llmviz.studio{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
@@ -15,19 +15,15 @@
                 extend: {
                     colors: {
                         brand: {
-                            bg: '#ffffff', bg2: '#f8fafc', bg3: '#f1f5f9',
-                            text: '#0f172a', text2: '#475569', text3: '#64748b',
-                            border: '#e2e8f0', border2: '#cbd5e1',
-                            accent: '#3b82f6', accent2: '#60a5fa',
+                            bg: '#06080F', bg2: '#0C1018', bg3: '#121824',
+                            text: '#D8DEE9', text2: '#8892A8', text3: '#4A5468',
+                            border: '#1A2030', border2: '#252E40',
+                            accent: '#3B82F6', accent2: '#60A5FA',
                         }
                     },
                     fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
+                        sans: ['Instrument Sans', 'sans-serif'],
                         mono: ['JetBrains Mono', 'monospace'],
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.5s ease-in-out',
-                        'slide-up': 'slideUp 0.3s ease-out',
                     }
                 }
             }
@@ -35,20 +31,18 @@
     </script>
     <style type="text/tailwindcss">
         @layer components {
-            .btn-primary { @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-brand-accent text-white transition-all duration-200 shadow-lg hover:bg-blue-600 hover:shadow-xl hover:scale-105; }
-            .btn-ghost { @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold bg-transparent text-brand-text2 border border-brand-border2 transition-all duration-200 hover:text-brand-text hover:border-brand-text3 hover:bg-brand-bg2; }
+            .btn-primary { @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-brand-accent text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:bg-blue-600 hover:shadow-[0_0_30px_rgba(59,130,246,0.3)]; }
+            .btn-ghost { @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-transparent text-brand-text2 border border-brand-border2 transition-all hover:text-brand-text hover:border-brand-text3; }
             .fade-up { animation: fadeUp 0.6s ease-out both; }
-            .fade-in { animation: fadeIn 0.5s ease-in-out both; }
         }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
     </style>
     {% block head %}{% endblock %}
 </head>
 <body class="bg-brand-bg text-brand-text font-sans antialiased">
-    <nav class="fixed top-0 left-0 right-0 z-[100] px-6 py-4 flex items-center justify-between bg-white/80 backdrop-blur-xl border-b border-brand-border shadow-sm">
-        <a href="/" class="text-lg font-semibold tracking-tight flex items-center gap-2 group text-brand-text">
-            <span class="w-2 h-2 rounded-full bg-brand-accent group-hover:scale-125 transition-transform duration-200"></span>
+    <nav class="fixed top-0 left-0 right-0 z-[100] px-6 py-3.5 flex items-center justify-between bg-brand-bg/85 backdrop-blur-2xl border-b border-brand-border">
+        <a href="/" class="text-base font-bold tracking-tight flex items-center gap-2 group">
+            <span class="w-2 h-2 rounded-full bg-brand-accent shadow-[0_0_8px_theme(colors.brand.accent)] group-hover:scale-125 transition-transform"></span>
             llmviz.studio
         </a>
         <div class="flex items-center gap-2">
