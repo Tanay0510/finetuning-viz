@@ -3,359 +3,169 @@
 {% block title %}llmviz.studio — LLM Fine-Tuning Visualized{% endblock %}
 
 {% block head %}
-<!-- Tailwind is loaded in base.html -->
 <style>
-  /* Custom animations that Tailwind doesn't handle natively by default in the CDN version */
-  @keyframes pulse { 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); } 50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); } }
-  .animate-pulse-slow { animation: pulse 2s infinite; }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  .animate-float { animation: float 6s ease-in-out infinite; }
+  .glow-text { text-shadow: 0 0 30px rgba(59, 130, 246, 0.5); }
+  .glass-card { background: rgba(12, 16, 24, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(26, 32, 48, 0.8); }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Hero -->
-<section class="relative min-h-[95vh] flex items-center overflow-hidden pb-[60px] bg-gradient-to-br from-blue-50 via-white to-purple-50">
-  <div class="absolute inset-0 z-0 pointer-events-none opacity-30">
+<!-- Hero Section -->
+<section class="relative min-h-[90vh] flex items-center justify-center overflow-hidden border-b border-brand-border">
+  <div class="absolute inset-0 z-0 opacity-40">
     <canvas id="hero-canvas" class="w-full h-full"></canvas>
   </div>
-  <div class="container relative z-10 grid grid-cols-1 lg:grid-cols-[1.2fr,1fr] gap-[40px] items-center mx-auto px-5">
-    <div class="max-w-[600px] text-center lg:text-left">
-      <div class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-gray-200 bg-white/80 backdrop-blur-sm text-xs text-gray-600 mb-8 font-medium shadow-sm fade-up">
-        <span class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-        v1.0 Launched · New 3D Engine · Open Source
-      </div>
-      <h1 class="text-4xl md:text-5xl lg:text-7xl font-bold tracking-tight leading-[1.05] mb-6 fade-up delay-1 text-gray-900">
-        LLM Fine-Tuning<br/>
-        <span class="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">Visual Studio</span>
-      </h1>
-      <p class="text-lg text-gray-600 leading-relaxed mb-10 fade-up delay-2 mx-auto lg:mx-0 max-w-lg">
-        Interactive 3D visualizations of modern parameter-efficient fine-tuning (PEFT) methods. Understand memory bottlenecks, architectural trade-offs, and scaling laws in minutes, not hours.
-      </p>
-      <div class="flex flex-wrap gap-4 justify-center lg:justify-start fade-up delay-3 mb-8">
-        {% if current_user.is_authenticated %}
-          <a href="/explore" class="btn-primary px-8 py-4 text-base">🔬 Open 3D Explorer</a>
-          <a href="/playground" class="btn-ghost px-8 py-4 text-base">⚡ GPU Playground</a>
-        {% else %}
-          <a href="/register" class="btn-primary px-10 py-4 text-base">🚀 Join the Studio</a>
-          <a href="/login" class="btn-ghost px-10 py-4 text-base">Sign In</a>
-        {% endif %}
-      </div>
-      <div class="flex items-center gap-8 text-sm text-gray-500 fade-up delay-4 justify-center lg:justify-start">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-green-500"></span>
-          <span>Free Forever</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-blue-500"></span>
-          <span>No Sign-up Required</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-purple-500"></span>
-          <span>Open Source</span>
-        </div>
-      </div>
-    </div>
-    <div class="relative h-[400px] flex items-center justify-center fade-in delay-2" id="hero-3d-container">
-      <!-- Three.js Mini-Explorer injected here -->
-    </div>
-  </div>
-</section>
-
-<!-- Tech Stack -->
-<section class="py-16 border-y border-gray-100 bg-gray-50/50">
-  <div class="container mx-auto px-5 flex flex-wrap justify-center items-center gap-12 md:gap-16 opacity-60 select-none">
-    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">TRANSFORMERS</div>
-    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">HUGGING FACE</div>
-    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">THREE.JS</div>
-    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">PYTORCH</div>
-    <div class="font-mono text-sm font-semibold tracking-wider text-gray-500">PEFT</div>
-  </div>
-</section>
-
-<!-- Key Features -->
-<section class="py-24 bg-gray-50">
-  <div class="container mx-auto px-5">
-    <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
-      <span class="text-xs uppercase tracking-wider font-mono text-blue-600 mb-3 block">Why Choose llmviz</span>
-      <h2 class="text-4xl font-bold tracking-tight mb-4 text-gray-900">Everything You Need to Master PEFT</h2>
-      <p class="text-gray-600 text-lg">From research to production, llmviz accelerates your understanding and implementation of efficient fine-tuning.</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-      <!-- Feature 1 -->
-      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up">
-        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
-          <span class="text-2xl">🎯</span>
-        </div>
-        <h3 class="text-xl font-bold mb-3 text-gray-900">Instant Architecture Understanding</h3>
-        <p class="text-gray-600 leading-relaxed">See how LoRA, QLoRA, and other methods modify model weights in interactive 3D. No more guessing what happens under the hood.</p>
-      </div>
-
-      <!-- Feature 2 -->
-      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-1">
-        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
-          <span class="text-2xl">⚡</span>
-        </div>
-        <h3 class="text-xl font-bold mb-3 text-gray-900">Real-time VRAM Calculator</h3>
-        <p class="text-gray-600 leading-relaxed">Input your GPU specs and get instant feedback on memory usage, training time, and cost estimates for any method.</p>
-      </div>
-
-      <!-- Feature 3 -->
-      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-2">
-        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
-          <span class="text-2xl">📚</span>
-        </div>
-        <h3 class="text-xl font-bold mb-3 text-gray-900">Production-Ready Code</h3>
-        <p class="text-gray-600 leading-relaxed">Copy-paste implementations with proper PEFT configurations, complete with Hugging Face integration and best practices.</p>
-      </div>
-
-      <!-- Feature 4 -->
-      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-3">
-        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
-          <span class="text-2xl">🔬</span>
-        </div>
-        <h3 class="text-xl font-bold mb-3 text-gray-900">Research-Backed Insights</h3>
-        <p class="text-gray-600 leading-relaxed">Every visualization is grounded in the latest papers. Understand the math behind parameter efficiency and scaling laws.</p>
-      </div>
-
-      <!-- Feature 5 -->
-      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-4">
-        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
-          <span class="text-2xl">🚀</span>
-        </div>
-        <h3 class="text-xl font-bold mb-3 text-gray-900">Zero Setup Required</h3>
-        <p class="text-gray-600 leading-relaxed">Works entirely in your browser. No installations, no dependencies, no GPU requirements. Just explore and learn.</p>
-      </div>
-
-      <!-- Feature 6 -->
-      <div class="bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-200 hover:shadow-lg transition-all duration-300 fade-up delay-5">
-        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center mb-6">
-          <span class="text-2xl">📊</span>
-        </div>
-        <h3 class="text-xl font-bold mb-3 text-gray-900">Compare Everything</h3>
-        <p class="text-gray-600 leading-relaxed">Side-by-side comparisons of training speed, memory usage, and quality metrics across all major PEFT methods.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Interactive Demo -->
-<section class="py-24 bg-gradient-to-br from-slate-900 via-gray-900 to-slate-900 relative overflow-hidden">
-  <div class="absolute inset-0 bg-gradient-to-br from-blue-900/10 via-transparent to-purple-900/10"></div>
   
-  <div class="container relative z-10 mx-auto px-5">
-    <div class="text-center max-w-3xl mx-auto mb-16 fade-up">
-      <span class="text-xs uppercase tracking-wider font-mono text-blue-400 mb-3 block">See It In Action</span>
-      <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-white">Interactive 3D Visualizations</h2>
-      <p class="text-gray-300 text-lg">Explore how PEFT methods transform model architectures in real-time. Click and drag to rotate, zoom to inspect details.</p>
-    </div>
+  <!-- Radial gradient overlay for depth -->
+  <div class="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,transparent_0%,theme(colors.brand.bg)_100%)]"></div>
 
-    <div class="max-w-6xl mx-auto">
-      <div class="bg-white/5 backdrop-blur-sm rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
-        <div class="p-6 border-b border-white/10">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <div class="flex gap-1">
-                <div class="w-3 h-3 rounded-full bg-red-500"></div>
-                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
-                <div class="w-3 h-3 rounded-full bg-green-500"></div>
-              </div>
-              <span class="text-gray-300 text-sm font-mono">llmviz.studio/explore</span>
-            </div>
-            <div class="flex items-center gap-4 text-sm text-gray-400">
-              <span>LoRA</span>
-              <span>•</span>
-              <span>Llama 7B</span>
-              <span>•</span>
-              <span>Rank 8</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="aspect-video bg-gradient-to-br from-slate-800 to-slate-900 relative overflow-hidden" id="demo-3d-container">
-          <!-- Three.js Scene injected here -->
-          <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-            <div class="text-center">
-              <h3 class="text-xl font-bold text-white mb-2 shadow-sm">3D Model Explorer</h3>
-              <p class="text-gray-300 text-sm max-w-md shadow-sm">Interactive visualization of transformer layers and adapters.</p>
-              <a href="/explore" class="inline-block mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors pointer-events-auto">
-                Launch Full Explorer →
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+  <div class="container relative z-10 px-5 text-center flex flex-col items-center">
+    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-xs font-mono text-brand-accent mb-8 shadow-[0_0_15px_rgba(59,130,246,0.2)] fade-up">
+      <span class="w-2 h-2 rounded-full bg-brand-accent animate-pulse"></span>
+      Neural Studio v1.0 is Live
+    </div>
+    
+    <h1 class="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-6 fade-up delay-1 leading-tight text-white glow-text">
+      See Inside the <br />
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-accent via-purple-400 to-brand-accent2">Black Box.</span>
+    </h1>
+    
+    <p class="text-lg md:text-xl text-brand-text2 max-w-2xl mx-auto mb-10 fade-up delay-2 leading-relaxed">
+      The first interactive 3D studio for LLM fine-tuning. Visually explore architectures, calculate exact VRAM requirements, and generate training recipes in seconds.
+    </p>
+    
+    <div class="flex flex-col sm:flex-row gap-4 fade-up delay-3 w-full sm:w-auto">
+      {% if current_user.is_authenticated %}
+        <a href="/explore" class="btn-primary !px-8 !py-4 text-base justify-center shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:scale-105 transition-transform">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M12 8v4l3 3"/></svg>
+          Launch 3D Explorer
+        </a>
+        <a href="/playground" class="btn-ghost !px-8 !py-4 text-base justify-center hover:bg-brand-bg2">
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="mr-2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          VRAM Profiler
+        </a>
+      {% else %}
+        <a href="/register" class="btn-primary !px-8 !py-4 text-base justify-center shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:scale-105 transition-transform">Get Started Free</a>
+        <a href="/login" class="btn-ghost !px-8 !py-4 text-base justify-center hover:bg-brand-bg2">Sign In</a>
+      {% endif %}
     </div>
   </div>
 </section>
 
-
-
-
-
-<!-- Comparison Section -->
-<section class="py-24 border-t border-gray-200">
+<!-- Method Marquee -->
+<section class="py-10 border-b border-brand-border bg-brand-bg2 overflow-hidden flex items-center">
   <div class="container mx-auto px-5">
-    <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
-      <span class="text-xs uppercase tracking-wider font-mono text-blue-600 mb-3 block">Architecture Comparison</span>
-      <h2 class="text-4xl font-bold tracking-tight mb-4 text-gray-900">Parameter Efficiency Visualized</h2>
-      <p class="text-gray-600 text-lg">Compare how different methods modify the model's weight matrices. See why PEFT is so efficient.</p>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <!-- Full FT -->
-      <div class="bg-white rounded-[32px] border border-gray-200 overflow-hidden fade-up group hover:border-red-300 hover:shadow-lg transition-all duration-300">
-        <div class="h-64 bg-gray-900 relative flex items-center justify-center p-12">
-          <div class="w-32 h-32 bg-red-500 rounded-xl shadow-[0_0_40px_rgba(239,68,68,0.4)] animate-pulse"></div>
-          <div class="absolute bottom-6 font-mono text-[9px] text-gray-400 tracking-[0.2em]">FULL PARAMETER UPDATES</div>
-        </div>
-        <div class="p-8">
-          <h3 class="text-2xl font-bold mb-3 text-gray-900">Full Fine-Tuning</h3>
-          <p class="text-gray-600 leading-relaxed mb-6">Every single weight in the model is updated. This requires massive VRAM for gradients and optimizer states.</p>
-          <div class="flex justify-between items-center font-mono text-sm font-semibold pt-6 border-t border-gray-200">
-            <span class="text-gray-500">Trainable Parameters:</span>
-            <span class="text-red-600">100%</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- LoRA -->
-      <div class="bg-white rounded-[32px] border border-gray-200 overflow-hidden fade-up delay-1 group hover:border-blue-300 hover:shadow-lg transition-all duration-300">
-        <div class="h-64 bg-gray-900 relative flex items-center justify-center p-12">
-          <div class="w-32 h-32 bg-gray-800 rounded-xl border border-gray-600 relative overflow-hidden">
-            <div class="absolute inset-x-0 h-1.5 bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.8)] top-[15%] animate-pulse"></div>
-            <div class="absolute inset-x-0 h-1.5 bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.8)] top-[45%] animate-pulse"></div>
-            <div class="absolute inset-x-0 h-1.5 bg-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.8)] top-[75%] animate-pulse"></div>
-          </div>
-          <div class="absolute bottom-6 font-mono text-[9px] text-gray-400 tracking-[0.2em]">LOW-RANK ADAPTERS ONLY</div>
-        </div>
-        <div class="p-8">
-          <h3 class="text-2xl font-bold mb-3 text-gray-900">LoRA (Low-Rank)</h3>
-          <p class="text-gray-600 leading-relaxed mb-6">Original weights are frozen. Only tiny rank-decomposition matrices are trained and injected into layers.</p>
-          <div class="flex justify-between items-center font-mono text-sm font-semibold pt-6 border-t border-gray-200">
-            <span class="text-gray-500">Trainable Parameters:</span>
-            <span class="text-blue-600">&lt; 1%</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- Methods Grid -->
-<section class="py-24 bg-gray-50" id="methods">
-  <div class="container mx-auto px-5">
-    <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
-      <span class="text-xs uppercase tracking-wider font-mono text-blue-600 mb-3 block">Method Library</span>
-      <h2 class="text-4xl font-bold tracking-tight mb-4 text-gray-900">Supported Strategies</h2>
-      <p class="text-gray-600 text-lg">Select a method to see the full 3D breakdown, paper details, and production-ready code snippets.</p>
-    </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div class="flex flex-wrap justify-center gap-6 md:gap-12 opacity-50 select-none grayscale transition-all duration-700 hover:grayscale-0 hover:opacity-100">
       {% for m in methods %}
-      <a href="/learn/{{ m.id }}" class="group relative flex flex-col bg-white rounded-2xl p-8 border border-gray-200 hover:border-blue-300 hover:-translate-y-2 transition-all duration-300 fade-up delay-{{ loop.index % 6 }} hover:shadow-lg">
-        <div class="absolute top-6 right-6 px-3 py-1 rounded-full bg-gray-100 border border-gray-200 font-mono text-[10px] text-gray-600 group-hover:text-blue-600 group-hover:border-blue-300 transition-colors">~{{ m.stats.vram_7b }} VRAM</div>
-        <span class="text-4xl mb-6 block">{{ m.emoji }}</span>
-        <div class="text-xl font-bold mb-2 transition-colors text-gray-900 group-hover:text-blue-600">{{ m.name }}</div>
-        <div class="text-sm text-gray-600 leading-relaxed mb-6 min-h-[40px]">{{ m.tagline }}</div>
-        <div class="font-mono text-[11px] p-3 rounded-xl bg-gray-900 border border-gray-800 mb-8 overflow-x-auto whitespace-nowrap text-blue-400">{{ m.formula }}</div>
-        <div class="flex justify-between mt-auto pt-6 border-t border-gray-200">
-          <div class="flex flex-col">
-            <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Trainable</span>
-            <span class="font-mono text-xs font-bold text-gray-900">{{ m.stats.params }}</span>
-          </div>
-          <div class="flex flex-col text-right">
-            <span class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Speed</span>
-            <span class="font-mono text-xs font-bold text-gray-900">{{ m.stats.speed }}</span>
-          </div>
+        <div class="flex items-center gap-2 font-mono text-sm font-bold tracking-widest uppercase">
+          <span class="text-xl">{{ m.emoji }}</span>
+          <span class="text-brand-text">{{ m.short }}</span>
         </div>
-      </a>
       {% endfor %}
     </div>
   </div>
 </section>
 
-<!-- Newsletter -->
-<section class="py-24 bg-gradient-to-r from-blue-50 to-purple-50 border-y border-gray-100">
-  <div class="container mx-auto px-5 text-center fade-up">
-    <h2 class="text-4xl font-bold tracking-tight mb-4 text-gray-900">Stay Updated</h2>
-    <p class="text-gray-600 text-lg max-w-2xl mx-auto mb-8">Get notified when new PEFT methods are added, major updates land, or breakthrough papers are released.</p>
-    <div class="max-w-md mx-auto">
-      <form class="flex gap-3">
-        <input type="email" placeholder="Enter your email" class="flex-1 px-4 py-3 rounded-xl bg-white border border-gray-200 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm">
-        <button type="submit" class="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-sm">Subscribe</button>
-      </form>
-      <p class="text-gray-500 text-sm mt-3">No spam, unsubscribe anytime. We respect your privacy.</p>
+<!-- Features Grid -->
+<section class="py-24 md:py-32 relative">
+  <div class="container mx-auto px-5 relative z-10">
+    <div class="text-center max-w-2xl mx-auto mb-20 fade-up">
+      <h2 class="text-3xl md:text-5xl font-bold tracking-tight mb-6 text-white">Master Parameter Efficiency</h2>
+      <p class="text-brand-text2 text-lg">Stop guessing how adapters work. Visualize the exact tensor operations and memory footprints before you spin up a GPU.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Feature 1 -->
+      <div class="glass-card rounded-[24px] p-8 fade-up group hover:border-brand-accent/50 transition-colors duration-500 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-brand-accent/10 blur-3xl rounded-full group-hover:bg-brand-accent/20 transition-colors"></div>
+        <div class="w-12 h-12 bg-brand-bg border border-brand-border rounded-xl flex items-center justify-center mb-6 text-xl shadow-lg relative z-10">🔬</div>
+        <h3 class="text-xl font-bold mb-3 text-white relative z-10">3D Architecture Explorer</h3>
+        <p class="text-brand-text2 text-sm leading-relaxed relative z-10">Dive into the transformer core. See exactly how LoRA matrices, Prefix vectors, and Adapters interact with frozen base model weights in real-time 3D.</p>
+      </div>
+
+      <!-- Feature 2 -->
+      <div class="glass-card rounded-[24px] p-8 fade-up delay-1 group hover:border-purple-500/50 transition-colors duration-500 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-3xl rounded-full group-hover:bg-purple-500/20 transition-colors"></div>
+        <div class="w-12 h-12 bg-brand-bg border border-brand-border rounded-xl flex items-center justify-center mb-6 text-xl shadow-lg relative z-10">⚡</div>
+        <h3 class="text-xl font-bold mb-3 text-white relative z-10">Precision VRAM Profiler</h3>
+        <p class="text-brand-text2 text-sm leading-relaxed relative z-10">Calculate exact memory requirements across different quantizations, sequence lengths, and batch sizes. Know if it fits before you rent the GPU.</p>
+      </div>
+
+      <!-- Feature 3 -->
+      <div class="glass-card rounded-[24px] p-8 fade-up delay-2 group hover:border-emerald-500/50 transition-colors duration-500 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full group-hover:bg-emerald-500/20 transition-colors"></div>
+        <div class="w-12 h-12 bg-brand-bg border border-brand-border rounded-xl flex items-center justify-center mb-6 text-xl shadow-lg relative z-10">⚙️</div>
+        <h3 class="text-xl font-bold mb-3 text-white relative z-10">Auto-Generated Recipes</h3>
+        <p class="text-brand-text2 text-sm leading-relaxed relative z-10">Export your configured playground setup directly into production-ready YAML recipes for Axolotl, Unsloth, or Hugging Face PEFT.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive Demo Section -->
+<section class="py-24 border-y border-brand-border bg-brand-bg2 relative overflow-hidden">
+  <div class="container mx-auto px-5 relative z-10">
+    <div class="grid grid-cols-1 lg:grid-cols-[1fr,1.5fr] gap-12 items-center">
+      <div class="fade-up">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-brand-bg border border-brand-border text-[10px] font-mono font-bold text-brand-text3 mb-6 uppercase tracking-widest">
+          Live Visualization
+        </div>
+        <h2 class="text-3xl md:text-4xl font-bold tracking-tight mb-6 text-white">Visualizing <span class="text-brand-accent">LoRA</span> Injection</h2>
+        <p class="text-brand-text2 text-lg leading-relaxed mb-8">
+          Low-Rank Adaptation freezes the pretrained model weights and injects trainable rank decomposition matrices into each layer of the Transformer architecture, greatly reducing the number of trainable parameters for downstream tasks.
+        </p>
+        <a href="/explore" class="btn-ghost !border-brand-accent/30 !text-brand-accent hover:!bg-brand-accent hover:!text-white transition-colors">
+          Open Full Explorer →
+        </a>
+      </div>
+      
+      <div class="fade-up delay-1">
+        <div class="bg-brand-bg rounded-[32px] border border-brand-border p-2 shadow-2xl relative group">
+          <div class="absolute -inset-1 bg-gradient-to-r from-brand-accent via-purple-500 to-brand-accent rounded-[34px] blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
+          <div class="relative bg-[#020408] rounded-[24px] aspect-video overflow-hidden border border-white/5" id="demo-3d-container">
+            <!-- Three.js scene will be injected here -->
+            
+            <div class="absolute inset-x-0 bottom-0 p-6 bg-gradient-to-t from-black/80 to-transparent pointer-events-none z-10 flex justify-between items-end">
+               <div class="font-mono text-xs text-white/70">r=16, alpha=32</div>
+               <div class="font-mono text-[10px] text-brand-accent uppercase tracking-widest border border-brand-accent/30 bg-brand-accent/10 px-2 py-1 rounded">Interactive Frame</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- Final CTA -->
-<section class="py-32 bg-gradient-to-b from-gray-50 to-white">
-  <div class="container mx-auto px-5 text-center fade-up">
-    <h2 class="text-5xl md:text-6xl font-bold tracking-tight mb-8 text-gray-900">Ready to Master PEFT?</h2>
-    <p class="text-gray-600 text-xl max-w-2xl mx-auto mb-12">Dive into the internals of parameter-efficient fine-tuning with interactive 3D visualizations. Start exploring in seconds.</p>
-    <div class="flex flex-wrap justify-center gap-5 mb-8">
-      <a href="/guide" class="btn-primary px-10 py-4 text-base">🎯 Find Your Method</a>
-      <a href="/explore" class="btn-ghost px-10 py-4 text-base">🔬 Explore 3D Models</a>
-      <a href="https://github.com/Tanay0510/finetuning-viz" target="_blank" class="btn-ghost px-10 py-4 text-base">⭐ Star on GitHub</a>
+<section class="py-32 relative text-center border-t border-brand-border">
+  <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.05),transparent_50%)]"></div>
+  <div class="container mx-auto px-5 relative z-10 fade-up">
+    <h2 class="text-4xl md:text-5xl font-bold tracking-tight mb-6 text-white">Stop Guessing. Start Visualizing.</h2>
+    <p class="text-brand-text2 text-xl max-w-2xl mx-auto mb-10">Join the platform built to demystify LLM fine-tuning architectures and hardware constraints.</p>
+    <div class="flex flex-wrap justify-center gap-4">
+      <a href="/register" class="btn-primary !px-10 !py-4 text-base shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:scale-105 transition-transform">Launch the Studio</a>
+      <a href="https://github.com/Tanay0510/finetuning-viz" target="_blank" class="btn-ghost !px-10 !py-4 text-base gap-2 flex items-center hover:bg-brand-bg2">
+        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.464-1.11-1.464-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z"></path></svg>
+        Star on GitHub
+      </a>
     </div>
-    <p class="text-gray-500 text-sm">Free forever • No credit card required • Open source</p>
   </div>
 </section>
 
 <!-- Footer -->
-<footer class="py-20 border-t border-gray-200 bg-gray-50">
+<footer class="py-12 border-t border-brand-border bg-brand-bg text-center">
   <div class="container mx-auto px-5">
-    <div class="grid grid-cols-1 md:grid-cols-[2fr,1fr,1fr,1fr] gap-16 mb-16">
-      <div>
-        <span class="text-2xl font-bold mb-6 block text-gray-900">llmviz.studio</span>
-        <p class="text-gray-600 text-base leading-relaxed max-w-xs">The visual authority on LLM fine-tuning architecture and resource optimization. Making PEFT methods accessible to every engineer.</p>
-        <div class="flex gap-4 mt-6">
-          <a href="https://twitter.com/tanaybhardwaj" target="_blank" class="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-blue-600 hover:text-white transition-colors shadow-sm border border-gray-200">
-            <span class="text-sm">𝕏</span>
-          </a>
-          <a href="https://github.com/Tanay0510/finetuning-viz" target="_blank" class="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-gray-900 hover:text-white transition-colors shadow-sm border border-gray-200">
-            <span class="text-sm">GH</span>
-          </a>
-          <a href="https://discord.gg/llmviz" target="_blank" class="w-8 h-8 bg-white rounded-lg flex items-center justify-center hover:bg-indigo-600 hover:text-white transition-colors shadow-sm border border-gray-200">
-            <span class="text-sm">💬</span>
-          </a>
-        </div>
-      </div>
-      <div>
-        <h4 class="text-xs uppercase tracking-wider text-gray-500 font-bold mb-8">Product</h4>
-        <ul class="space-y-4">
-          <li><a href="/explore" class="text-gray-600 hover:text-blue-600 transition-colors">3D Explorer</a></li>
-          <li><a href="/playground" class="text-gray-600 hover:text-blue-600 transition-colors">GPU Playground</a></li>
-          <li><a href="/guide" class="text-gray-600 hover:text-blue-600 transition-colors">Method Guide</a></li>
-          <li><a href="/learn" class="text-gray-600 hover:text-blue-600 transition-colors">Learn Hub</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 class="text-xs uppercase tracking-wider text-gray-500 font-bold mb-8">Resources</h4>
-        <ul class="space-y-4">
-          <li><a href="https://arxiv.org/abs/2106.09685" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">LoRA Paper</a></li>
-          <li><a href="https://huggingface.co/docs/peft" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">PEFT Docs</a></li>
-          <li><a href="https://github.com/huggingface/peft" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">PEFT Library</a></li>
-          <li><a href="/data" class="text-gray-600 hover:text-blue-600 transition-colors">Data Prep Guide</a></li>
-        </ul>
-      </div>
-      <div>
-        <h4 class="text-xs uppercase tracking-wider text-gray-500 font-bold mb-8">Company</h4>
-        <ul class="space-y-4">
-          <li><a href="https://tanaybhardwaj.com" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">About</a></li>
-          <li><a href="https://github.com/Tanay0510" target="_blank" class="text-gray-600 hover:text-blue-600 transition-colors">GitHub</a></li>
-          <li><a href="mailto:hello@llmviz.studio" class="text-gray-600 hover:text-blue-600 transition-colors">Contact</a></li>
-          <li><a href="/privacy" class="text-gray-600 hover:text-blue-600 transition-colors">Privacy</a></li>
-        </ul>
-      </div>
+    <div class="flex items-center justify-center gap-2 mb-4">
+      <span class="w-2 h-2 rounded-full bg-brand-accent shadow-[0_0_8px_theme(colors.brand.accent)]"></span>
+      <span class="font-bold text-white tracking-tight">llmviz.studio</span>
     </div>
-    <div class="pt-10 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center gap-6 text-sm text-gray-500">
-      <p>&copy; 2026 llmviz.studio · Created by Tanay Bhardwaj · Made with ❤️ for the AI community</p>
-      <div class="flex gap-8">
-        <a href="/terms" class="hover:text-gray-700 transition-colors">Terms</a>
-        <a href="/privacy" class="hover:text-gray-700 transition-colors">Privacy</a>
-        <a href="https://github.com/Tanay0510/finetuning-viz" target="_blank" class="hover:text-gray-700 transition-colors">Source</a>
-      </div>
+    <p class="text-brand-text3 text-sm mb-6">Built for the AI community. Visualizing the future of fine-tuning.</p>
+    <div class="flex justify-center gap-6 text-sm text-brand-text2 font-mono">
+      <a href="/explore" class="hover:text-white transition-colors">Explorer</a>
+      <a href="/playground" class="hover:text-white transition-colors">Playground</a>
+      <a href="/guide" class="hover:text-white transition-colors">Guide</a>
     </div>
   </div>
 </footer>
@@ -363,121 +173,66 @@
 
 {% block scripts %}
 <script>
-// Animated gradient mesh background
+// Hero Background Canvas (Particles/Nodes)
 (function(){
-  const c = document.getElementById('hero-canvas');
-  if(!c) return;
-  const ctx = c.getContext('2d');
+  const canvas = document.getElementById('hero-canvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
   let w, h;
-  function resize(){
-    w = c.width = c.offsetWidth * (window.devicePixelRatio > 1 ? 1.5 : 1);
-    h = c.height = c.offsetHeight * (window.devicePixelRatio > 1 ? 1.5 : 1);
+  
+  function resize() {
+    w = canvas.width = canvas.offsetWidth * (window.devicePixelRatio || 1);
+    h = canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1);
   }
   resize();
   window.addEventListener('resize', resize);
 
-  const blobs = [
-    {x:0.2, y:0.3, r:300, color:'rgba(59,130,246,0.08)', vx:0.0002, vy:0.0001},
-    {x:0.7, y:0.5, r:350, color:'rgba(167,139,250,0.06)', vx:-0.0001, vy:0.0002},
-    {x:0.5, y:0.8, r:250, color:'rgba(244,114,182,0.05)', vx:0.00015, vy:-0.00015},
-    {x:0.3, y:0.6, r:200, color:'rgba(16,185,129,0.04)', vx:-0.0002, vy:0.0001},
-  ];
-
-  function draw(){
-    ctx.clearRect(0,0,w,h);
-    blobs.forEach(b => {
-      b.x += b.vx; b.y += b.vy;
-      if(b.x < 0 || b.x > 1) b.vx *= -1;
-      if(b.y < 0 || b.y > 1) b.vy *= -1;
-      const grd = ctx.createRadialGradient(b.x*w, b.y*h, 0, b.x*w, b.y*h, b.r * (w/1000));
-      grd.addColorStop(0, b.color);
-      grd.addColorStop(1, 'transparent');
-      ctx.fillStyle = grd;
-      ctx.fillRect(0,0,w,h);
+  const particles = [];
+  const count = 70;
+  for(let i=0; i<count; i++) {
+    particles.push({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      radius: Math.random() * 1.5 + 0.5
     });
+  }
 
-    // Grid lines
-    ctx.strokeStyle = 'rgba(255,255,255,0.015)';
-    ctx.lineWidth = 0.5;
-    const gridSize = 60;
-    for(let x = 0; x < w; x += gridSize){
-      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
-    }
-    for(let y = 0; y < h; y += gridSize){
-      ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  function draw() {
+    ctx.clearRect(0,0,w,h);
+    ctx.fillStyle = '#3B82F6';
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.15)';
+    ctx.lineWidth = 1;
+
+    for(let i=0; i<count; i++) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      
+      if(p.x < 0 || p.x > w) p.vx *= -1;
+      if(p.y < 0 || p.y > h) p.vy *= -1;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+      ctx.fill();
+
+      // Connect near particles
+      for(let j=i+1; j<count; j++) {
+        const p2 = particles[j];
+        const dx = p.x - p2.x;
+        const dy = p.y - p2.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < 160 * (w/1000)) {
+          ctx.beginPath();
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+        }
+      }
     }
     requestAnimationFrame(draw);
   }
   draw();
-})();
-
-// Three.js Hero Mini-Explorer
-(function(){
-  const container = document.getElementById('hero-3d-container');
-  if(!container || typeof THREE === 'undefined') return;
-
-  const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(75, container.offsetWidth / container.offsetHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-  renderer.setSize(container.offsetWidth, container.offsetHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  container.appendChild(renderer.domElement);
-
-  const group = new THREE.Group();
-  scene.add(group);
-
-  const nodeCount = 40;
-  const nodes = [];
-  const nodeGeometry = new THREE.SphereGeometry(0.12, 16, 16);
-  const nodeMaterial = new THREE.MeshBasicMaterial({ color: 0x3B82F6 });
-  
-  for(let i=0; i<nodeCount; i++) {
-    const mesh = new THREE.Mesh(nodeGeometry, nodeMaterial);
-    mesh.position.set(
-      (Math.random() - 0.5) * 6,
-      (Math.random() - 0.5) * 6,
-      (Math.random() - 0.5) * 6
-    );
-    group.add(mesh);
-    nodes.push(mesh.position);
-  }
-
-  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x3B82F6, transparent: true, opacity: 0.2 });
-  for(let i=0; i<nodes.length; i++) {
-    for(let j=i+1; j<nodes.length; j++) {
-      const dist = nodes[i].distanceTo(nodes[j]);
-      if(dist < 2.5) {
-        const points = [nodes[i], nodes[j]];
-        const lineGeometry = new THREE.BufferGeometry().setFromPoints(points);
-        const line = new THREE.Line(lineGeometry, lineMaterial);
-        group.add(line);
-      }
-    }
-  }
-
-  camera.position.z = 6;
-
-  let mouseX = 0, mouseY = 0;
-  window.addEventListener('mousemove', (e) => {
-    mouseX = (e.clientX / window.innerWidth - 0.5) * 0.5;
-    mouseY = (e.clientY / window.innerHeight - 0.5) * 0.5;
-  });
-
-  function animate() {
-    requestAnimationFrame(animate);
-    group.rotation.y += 0.002;
-    group.rotation.x += 0.001;
-    group.rotation.y += mouseX * 0.05;
-    group.rotation.x += mouseY * 0.05;
-    renderer.render(scene, camera);
-  }
-  animate();
-
-  window.addEventListener('resize', () => {
-    camera.aspect = container.offsetWidth / container.offsetHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(container.offsetWidth, container.offsetHeight);
-  });
 })();
 
 // Three.js Demo Section (Interactive Layers)
@@ -487,7 +242,7 @@
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(45, container.offsetWidth / container.offsetHeight, 0.1, 1000);
-  const renderer = new THREE.WebGLRenderer({ antialias: true });
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(container.offsetWidth, container.offsetHeight);
   renderer.setPixelRatio(window.devicePixelRatio);
   container.insertBefore(renderer.domElement, container.firstChild);
@@ -496,61 +251,61 @@
   const group = new THREE.Group();
   scene.add(group);
 
-  const layerCount = 5;
+  const layerCount = 4;
   const layers = [];
-  const geometry = new THREE.BoxGeometry(4, 0.1, 2.5);
+  const geometry = new THREE.BoxGeometry(4, 0.2, 2.5);
   
   for(let i=0; i<layerCount; i++) {
+    // Base layer
     const mat = new THREE.MeshPhongMaterial({ 
-      color: 0x3B82F6, 
+      color: 0x252E40, 
       transparent: true, 
-      opacity: 0.4,
-      shininess: 100
+      opacity: 0.6,
+      shininess: 50
     });
     const mesh = new THREE.Mesh(geometry, mat);
-    mesh.position.y = (i - (layerCount-1)/2) * 0.8;
+    mesh.position.y = (i - (layerCount-1)/2) * 1.2;
     group.add(mesh);
     layers.push(mesh);
 
-    // Add wireframe
+    // Wireframe edge
     const wire = new THREE.LineSegments(
       new THREE.EdgesGeometry(geometry),
-      new THREE.LineBasicMaterial({ color: 0x60A5FA, transparent: true, opacity: 0.5 })
+      new THREE.LineBasicMaterial({ color: 0x3B82F6, transparent: true, opacity: 0.3 })
     );
     mesh.add(wire);
+
+    // Add "LoRA" adapters to each layer
+    const adapterGeo = new THREE.BoxGeometry(0.6, 0.4, 0.6);
+    const adapterMatA = new THREE.MeshPhongMaterial({ color: 0x3B82F6, emissive: 0x3B82F6, emissiveIntensity: 0.6 });
+    const adapterMatB = new THREE.MeshPhongMaterial({ color: 0x8B5CF6, emissive: 0x8B5CF6, emissiveIntensity: 0.6 });
+    
+    const a1 = new THREE.Mesh(adapterGeo, adapterMatA);
+    a1.position.set(-1.5, 0.3, 0);
+    mesh.add(a1);
+    
+    const a2 = new THREE.Mesh(adapterGeo, adapterMatB);
+    a2.position.set(1.5, 0.3, 0);
+    mesh.add(a2);
   }
 
-  // Add "LoRA" adapters
-  const adapterGeo = new THREE.BoxGeometry(0.5, 0.4, 0.5);
-  const adapterMat = new THREE.MeshPhongMaterial({ color: 0x10B981, emissive: 0x10B981, emissiveIntensity: 0.5 });
-  
-  layers.forEach(layer => {
-    const a1 = new THREE.Mesh(adapterGeo, adapterMat);
-    a1.position.set(-1.5, 0.2, 0);
-    layer.add(a1);
-    
-    const a2 = new THREE.Mesh(adapterGeo, adapterMat);
-    a2.position.set(1.5, 0.2, 0);
-    layer.add(a2);
-  });
-
   // Lights
-  const ambientLight = new THREE.AmbientLight(0x404040);
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
   scene.add(ambientLight);
-  const light = new THREE.PointLight(0xffffff, 1, 100);
+  const light = new THREE.PointLight(0xffffff, 1.5, 100);
   light.position.set(5, 5, 5);
   scene.add(light);
 
-  camera.position.set(5, 3, 5);
+  camera.position.set(6, 4, 6);
   camera.lookAt(0, 0, 0);
 
   function animate() {
     requestAnimationFrame(animate);
-    group.rotation.y += 0.005;
+    group.rotation.y += 0.003;
     
     // Wave effect
     layers.forEach((l, i) => {
-      l.position.y = ((i - (layerCount-1)/2) * 0.8) + Math.sin(Date.now() * 0.002 + i) * 0.1;
+      l.position.y = ((i - (layerCount-1)/2) * 1.2) + Math.sin(Date.now() * 0.002 + i) * 0.1;
     });
     
     renderer.render(scene, camera);
