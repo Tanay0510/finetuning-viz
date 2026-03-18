@@ -6,7 +6,6 @@ from flask import Flask, render_template, jsonify, request, redirect, url_for, f
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from groq import Groq
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-llmviz-123')
@@ -14,7 +13,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('NEON_DATABASE_URL', 'sql
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
-client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -287,51 +285,6 @@ def attention():
 @app.route("/api/methods")
 def api_methods():
     return jsonify(METHODS)
-
-@app.route("/chat", methods=['POST'])
-@login_required
-def chat():
-    user_message = request.json.get("message")
-    
-    system_prompt = """
-    You are the 'AI Scene Director' for llmviz.studio, a 3D visualization platform for LLM fine-tuning.
-    Your goal is to explain technical concepts while simultaneously controlling the 3D viewport.
-    
-    You MUST respond in valid JSON format only.
-    Response Structure:
-    {
-        "text": "Your verbal explanation here",
-        "commands": [
-            { "action": "SWITCH_METHOD", "value": "lora" },
-            { "action": "TOGGLE_EXPLODE", "value": true },
-            { "action": "TOGGLE_CLUSTER", "value": false },
-            { "action": "SET_TIMELINE", "value": 0.5 }
-        ]
-    }
-    
-    Available Methods: lora, full, qlora, dora, galore, prefix, adapters, rlhf.
-    Timeline: 0.0 (fresh) to 1.0 (trained).
-    
-    Instructions:
-    - If they ask to see a method (e.g., 'Show me LoRA'), use SWITCH_METHOD.
-    - If they want to see internal layers, use TOGGLE_EXPLODE.
-    - If they ask about scaling or multiple GPUs, use TOGGLE_CLUSTER.
-    - If they ask to see the training effect, use SET_TIMELINE.
-    - Be technical, concise, and helpful.
-    """
-
-    try:
-        completion = client.chat.completions.create(
-            model="llama3-8b-8192",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            response_format={ "type": "json_object" }
-        )
-        return completion.choices[0].message.content
-    except Exception as e:
-        return jsonify({"text": "System error: " + str(e), "commands": []}), 500
 
 if __name__ == "__main__":
     with app.app_context():

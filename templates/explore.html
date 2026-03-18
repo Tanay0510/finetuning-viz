@@ -20,12 +20,6 @@
     .annotation-tag {
       @apply absolute px-3 py-1.5 bg-black/80 backdrop-blur-xl border border-brand-accent/30 rounded-lg text-[10px] font-mono text-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.2)] pointer-events-none select-none z-30 whitespace-nowrap transition-all duration-300;
     }
-    .chat-bubble {
-      @apply bg-brand-accent/10 border border-brand-accent/30 rounded-2xl px-4 py-3 text-xs text-brand-text leading-relaxed mb-3 animate-[slide-up_0.3s_ease-out];
-    }
-    .user-bubble {
-      @apply bg-brand-bg3/50 border border-brand-border rounded-2xl px-4 py-3 text-xs text-brand-text2 leading-relaxed mb-3 text-right animate-[slide-up_0.3s_ease-out];
-    }
   }
 </style>
 {% endblock %}
@@ -40,7 +34,7 @@
         Neural Studio Core V1
       </div>
       <h1 class="text-4xl font-bold tracking-tight mb-2">🔬 3D Explorer</h1>
-      <p class="text-brand-text2 text-lg italic opacity-80">"Hello, I'm your AI Scene Narrator. Ask me to show you anything."</p>
+      <p class="text-brand-text2 text-lg opacity-80">Interactive 3D visualization of model architectures and fine-tuning adapters.</p>
     </div>
     
     <div class="flex flex-wrap gap-2" id="method-btns">
@@ -72,23 +66,8 @@
         </button>
       </div>
 
-      <!-- AI Narrator Chat HUD -->
-      <div class="absolute bottom-28 right-8 z-40 w-full max-w-[360px] flex flex-col items-end">
-        <div id="chat-history" class="w-full max-h-[300px] overflow-y-auto mb-4 scrollbar-hide">
-          <!-- Chat messages appear here -->
-        </div>
-        <div class="w-full relative">
-          <input type="text" id="chat-input" placeholder="Ask the Narrator..." 
-                 class="w-full bg-black/60 backdrop-blur-2xl border border-white/10 rounded-2xl px-6 py-4 text-xs text-white focus:outline-none focus:border-brand-accent transition-all shadow-2xl"
-                 onkeydown="if(event.key === 'Enter') sendChatMessage()">
-          <button onclick="sendChatMessage()" class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl bg-brand-accent text-white flex items-center justify-center hover:scale-110 transition-transform">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
-        </div>
-      </div>
-
       <!-- Timeline HUD -->
-      <div class="absolute bottom-8 left-8 right-[400px] z-30 flex items-center gap-6 px-8 py-5 rounded-[28px] bg-black/60 backdrop-blur-2xl border border-white/10 group/timeline shadow-2xl">
+      <div class="absolute bottom-8 left-8 right-8 z-30 flex items-center gap-6 px-8 py-5 rounded-[28px] bg-black/60 backdrop-blur-2xl border border-white/10 group/timeline shadow-2xl">
         <div class="flex flex-col gap-1 min-w-[130px]">
           <span class="hud-label !mb-0 text-white/50">Training State</span>
           <span class="text-[12px] font-mono text-brand-accent font-bold tracking-widest" id="epoch-val">EPOCH: 0.00</span>
@@ -132,57 +111,6 @@ let mouse = {dn:false, lx:0, ly:0};
 let sceneObjects = { layers: [], extras: [], annotations: [], lasers: null };
 let isExploded = false;
 let trainingProgress = 0;
-
-// --- AI Narrator Dispatcher ---
-async function sendChatMessage() {
-    const input = document.getElementById('chat-input');
-    const msg = input.value.trim();
-    if (!msg) return;
-    
-    input.value = '';
-    addMessage(msg, 'user');
-    
-    const thinkingMsg = addMessage("Analyzing architecture...", 'ai');
-    
-    try {
-        const res = await fetch('/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: msg })
-        });
-        const data = await res.json();
-        
-        thinkingMsg.remove();
-        addMessage(data.text, 'ai');
-        
-        // Dispatch commands
-        if (data.commands) {
-            data.commands.forEach(cmd => {
-                if (cmd.action === 'SWITCH_METHOD') pickMethod(cmd.value);
-                if (cmd.action === 'TOGGLE_EXPLODE') {
-                    if (cmd.value !== isExploded) toggleExplode();
-                }
-                if (cmd.action === 'SET_TIMELINE') {
-                    const slider = document.getElementById('training-slider');
-                    slider.value = cmd.value;
-                    updateTrainingProgress(cmd.value);
-                }
-            });
-        }
-    } catch (e) {
-        thinkingMsg.textContent = "Error connecting to Core Brain.";
-    }
-}
-
-function addMessage(text, type) {
-    const history = document.getElementById('chat-history');
-    const div = document.createElement('div');
-    div.className = type === 'ai' ? 'chat-bubble' : 'user-bubble';
-    div.textContent = text;
-    history.appendChild(div);
-    history.scrollTop = history.scrollHeight;
-    return div;
-}
 
 // Transformer Architecture Definition
 const ARCH = [
