@@ -26,14 +26,15 @@
 
 {% block content %}
 <div class="container mx-auto px-5 py-12 max-w-[1400px]">
+  <!-- Header & Method Selectors -->
   <div class="flex flex-col xl:flex-row xl:items-end justify-between mb-8 gap-6 fade-up">
     <div>
       <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-[10px] font-mono font-bold text-brand-accent mb-4 uppercase tracking-widest">
         <span class="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></span>
-        Holographic Render Engine V3
+        Neural Studio Core V1
       </div>
       <h1 class="text-4xl font-bold tracking-tight mb-2">🔬 3D Explorer</h1>
-      <p class="text-brand-text2 text-lg">Real-time neural matrix visualization with Post-Processing Bloom</p>
+      <p class="text-brand-text2 text-lg opacity-80">Interactive 3D visualization of model architectures and fine-tuning adapters.</p>
     </div>
     
     <div class="flex flex-wrap gap-2" id="method-btns">
@@ -50,31 +51,19 @@
   </div>
 
   <div class="relative group fade-up delay-1" id="viewport-container">
+    <!-- Viewport Frame -->
     <div class="relative rounded-[40px] overflow-hidden border border-brand-border bg-[#020408] shadow-[0_0_80px_rgba(0,0,0,0.8)] aspect-[16/9] md:aspect-auto md:h-[700px]">
       
-      <!-- Scanline Overlay -->
-      <div class="absolute inset-0 pointer-events-none z-20 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.1)_50%),linear-gradient(90deg,rgba(255,0,0,0.02),rgba(0,255,0,0.01),rgba(0,0,255,0.02))] bg-[length:100%_4px,3px_100%] opacity-30 mix-blend-overlay"></div>
-
       <!-- HUD Overlays -->
       <div class="absolute top-8 left-8 z-10">
-        <div class="text-3xl font-bold text-white tracking-tight drop-shadow-2xl flex items-center gap-3" id="overlay-title">
-          🔌 LoRA
-        </div>
-        <div class="mt-2 font-mono text-[10px] text-brand-text3 uppercase tracking-[0.3em]">Transformer Architecture</div>
+        <div class="text-3xl font-bold text-white tracking-tight drop-shadow-2xl flex items-center gap-3" id="overlay-title">🔌 LoRA</div>
+        <div class="mt-2 font-mono text-[10px] text-brand-text3 uppercase tracking-[0.3em]">Transformer Core Engine</div>
       </div>
 
       <div class="absolute top-8 right-8 z-10 flex flex-col items-end gap-3">
-        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10 font-mono text-[9px] font-bold tracking-[0.2em]" id="live-badge">
-          <span class="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></span>
-          RENDER: ACTIVE
-        </div>
-        
-        <!-- Explode Toggle -->
         <button onclick="toggleExplode()" id="explode-btn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 font-mono text-[10px] font-bold tracking-[0.2em] text-brand-text3 hover:text-white transition-all shadow-lg">
           💥 EXPLODED VIEW
         </button>
-
-        <div class="text-[9px] font-mono text-brand-text3 opacity-50 px-2 mt-1">GPU VRAM SIMULATION</div>
       </div>
 
       <!-- Timeline HUD -->
@@ -86,9 +75,6 @@
         <input type="range" id="training-slider" min="0" max="1" step="0.01" value="0" 
                class="flex-grow h-1.5 bg-white/5 rounded-full appearance-none outline-none border border-white/5 accent-brand-accent cursor-pointer"
                oninput="updateTrainingProgress(this.value)">
-        <div class="font-mono text-[10px] text-brand-text3 uppercase tracking-[0.2em] hidden lg:block border-l border-white/10 pl-6">
-          Optimize Weights
-        </div>
       </div>
 
       <!-- 3D Annotations Container -->
@@ -97,13 +83,14 @@
       <canvas id="three-canvas" class="w-full h-full cursor-grab active:cursor-grabbing outline-none"></canvas>
     </div>
 
+    <!-- Data Insights -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
       <div class="terminal-box fade-up delay-2" id="desc-box">
-        <div class="hud-label" id="desc-label">Method Logic</div>
+        <div class="hud-label" id="desc-label">Neural Insight</div>
         <p id="desc-text" class="text-brand-text2 leading-relaxed text-[15px]"></p>
       </div>
       <div class="terminal-box fade-up delay-3" id="insight-box">
-        <div class="hud-label">Architectural Impact</div>
+        <div class="hud-label">Technical Logic</div>
         <p id="insight-text" class="text-brand-text2 leading-relaxed text-[15px] italic mb-6"></p>
         <div class="bg-black/60 rounded-2xl p-5 border border-brand-border">
           <code id="formula-text" class="font-mono text-sm block overflow-x-auto whitespace-nowrap"></code>
@@ -168,32 +155,21 @@ function pickMethod(id) {
   document.getElementById('insight-text').textContent = currentMethod.insight;
   document.getElementById('formula-text').textContent = currentMethod.formula;
   document.getElementById('formula-text').style.color = currentMethod.color;
-  
-  const liveBadge = document.getElementById('live-badge');
-  liveBadge.style.color = currentMethod.color;
-  liveBadge.querySelector('span').style.background = currentMethod.color;
-  liveBadge.style.borderColor = `${currentMethod.color}40`;
-  document.getElementById('desc-label').style.color = currentMethod.color;
-
   rebuildScene();
 }
 
 function initThree() {
   const cvs = document.getElementById('three-canvas');
   const container = cvs.parentElement;
-  
   scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x020408, 0.015);
-
   camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
-  
   renderer = new THREE.WebGLRenderer({canvas:cvs, antialias:false, powerPreference: "high-performance"});
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(window.devicePixelRatio > 1 ? 1.5 : 1); // Optimize for high DPI
+  renderer.setPixelRatio(window.devicePixelRatio > 1 ? 1.5 : 1);
   renderer.toneMapping = THREE.ReinhardToneMapping;
   renderer.toneMappingExposure = 1.2;
   
-  // Post-Processing Bloom
   const renderScene = new THREE.RenderPass(scene, camera);
   const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 2.0, 0.5, 0.1);
   composer = new THREE.EffectComposer(renderer);
@@ -247,138 +223,65 @@ function createTensorMatrix(w, h, color, isEmissive) {
   const group = new THREE.Group();
   const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
   const mat = new THREE.MeshStandardMaterial({
-    color: color,
-    emissive: color,
-    emissiveIntensity: isEmissive ? 1.5 : 0.05,
+    color: color, emissive: color, emissiveIntensity: isEmissive ? 1.5 : 0.05,
     metalness: 0.9, roughness: 0.1, transparent: true, opacity: isEmissive ? 0.9 : 0.3
   });
-  
   const imesh = new THREE.InstancedMesh(geo, mat, w * h);
-  let idx = 0;
-  const dummy = new THREE.Object3D();
+  let idx = 0; const dummy = new THREE.Object3D();
   for(let x=0; x<w; x++){
     for(let y=0; y<h; y++){
       dummy.position.set((x - w/2)*0.5, (y - h/2)*0.5, 0);
-      dummy.updateMatrix();
-      imesh.setMatrixAt(idx++, dummy.matrix);
+      dummy.updateMatrix(); imesh.setMatrixAt(idx++, dummy.matrix);
     }
   }
   group.add(imesh);
-  
-  // Wireframe bounding box
-  const boxGeo = new THREE.BoxGeometry(w*0.5, h*0.5, 0.5);
-  const boxMat = new THREE.MeshBasicMaterial({color: color, wireframe: true, transparent: true, opacity: 0.15});
-  const boundingBox = new THREE.Mesh(boxGeo, boxMat);
-  group.add(boundingBox);
-
   return { group, imesh, mat };
 }
 
 function rebuildScene(){
   clearScene();
   const mc = new THREE.Color(currentMethod.color);
-  const ac = new THREE.Color(currentMethod.accent);
-  const isFull = currentMethod.id==='full'||currentMethod.id==='rlhf'||currentMethod.id==='galore';
-
   scene.add(new THREE.AmbientLight(0x0c1018, 2.0));
   const dl = new THREE.DirectionalLight(0xffffff, 1.0); dl.position.set(10, 20, 10); scene.add(dl);
-  
-  // High-Tech Floor
-  const gridHelper = new THREE.GridHelper(200, 100, 0x1A2030, 0x06080F);
-  gridHelper.position.y = -8;
-  scene.add(gridHelper);
+  const gridHelper = new THREE.GridHelper(200, 100, 0x1A2030, 0x06080F); gridHelper.position.y = -8; scene.add(gridHelper);
 
-  // Build Architecture
   ARCH.forEach((layerDef) => {
-    const isLayerEmissive = isFull || (currentMethod.id === 'prefix' && layerDef.id === 'qkv');
-    const color = isFull ? mc : layerDef.color;
-    
-    const { group, imesh, mat } = createTensorMatrix(layerDef.w, layerDef.h, color, isLayerEmissive);
-    group.position.z = layerDef.baseZ;
-    scene.add(group);
-    
-    // Add anchor for annotation
-    const anchor = new THREE.Object3D();
-    anchor.position.set(0, (layerDef.h/2 * 0.5) + 1, 0);
-    group.add(anchor);
+    const isLayerEmissive = currentMethod.id === 'full' || (currentMethod.id === 'prefix' && layerDef.id === 'qkv');
+    const { group, mat } = createTensorMatrix(layerDef.w, layerDef.h, isLayerEmissive ? mc : layerDef.color, isLayerEmissive);
+    group.position.z = layerDef.baseZ; scene.add(group);
+    const anchor = new THREE.Object3D(); anchor.position.set(0, (layerDef.h/2 * 0.5) + 1, 0); group.add(anchor);
     createAnnotation(layerDef.name, anchor);
-
-    sceneObjects.layers.push({ group, baseZ: layerDef.baseZ, imesh, mat, isEmissive: isLayerEmissive });
+    sceneObjects.layers.push({ group, baseZ: layerDef.baseZ, mat, isEmissive: isLayerEmissive });
   });
 
-  // Method-Specific Tech (Adapters, DoRA, etc.)
   if (['lora', 'qlora', 'dora'].includes(currentMethod.id)) {
     const qkvLayer = sceneObjects.layers.find(l => l.baseZ === -4);
-    
-    // LoRA A & B Matrices
     const loraGroup = new THREE.Group();
-    const { group: matA } = createTensorMatrix(8, 2, mc, true); // Low rank (height 2)
-    matA.position.set(4, 0, 0.5);
-    const { group: matB } = createTensorMatrix(2, 8, ac, true); // Low rank (width 2)
-    matB.position.set(4, 0, -0.5);
-    
+    const { group: matA } = createTensorMatrix(8, 2, mc, true); matA.position.set(4, 0, 0.5);
+    const { group: matB } = createTensorMatrix(2, 8, new THREE.Color(currentMethod.accent), true); matB.position.set(4, 0, -0.5);
     loraGroup.add(matA); loraGroup.add(matB);
-    
-    // Add connecting lines
-    const lineMat = new THREE.LineBasicMaterial({color: mc, transparent: true, opacity: 0.5});
-    const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(4,0,0)]);
-    loraGroup.add(new THREE.Line(lineGeo, lineMat));
-
     qkvLayer.group.add(loraGroup);
-    
     const loraAnchor = new THREE.Object3D(); loraAnchor.position.set(4, 2.5, 0); loraGroup.add(loraAnchor);
-    createAnnotation(`Low-Rank Adapter (r=16)`, loraAnchor);
-    
-    if (currentMethod.id === 'dora') {
-        const ringGeo = new THREE.TorusGeometry(3.5, 0.1, 16, 64);
-        const ringMat = new THREE.MeshStandardMaterial({color: mc, emissive: mc, emissiveIntensity: 2});
-        const ring = new THREE.Mesh(ringGeo, ringMat);
-        loraGroup.add(ring);
-        sceneObjects.extras.push({mesh: ring, type: 'dora_mag'});
-        
-        const doraAnchor = new THREE.Object3D(); doraAnchor.position.set(-4, 0, 0); ring.add(doraAnchor);
-        createAnnotation("Magnitude Vector", doraAnchor);
-    }
+    createAnnotation(`LoRA Adapter`, loraAnchor);
   }
 
-  // High-Speed Data Lasers (Instead of floating dots)
-  const laserGeo = new THREE.BoxGeometry(0.05, 0.05, 2.0); // Long thin box
+  const laserGeo = new THREE.BoxGeometry(0.05, 0.05, 2.0);
   const laserMat = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.9});
-  const laserCount = 100;
-  const lasers = new THREE.InstancedMesh(laserGeo, laserMat, laserCount);
-  
-  const dummy = new THREE.Object3D();
-  const laserData = [];
-  for(let i=0; i<laserCount; i++) {
-      laserData.push({
-          x: (Math.random() - 0.5) * 8,
-          y: (Math.random() - 0.5) * 8,
-          z: -15 + Math.random() * 30,
-          speed: 0.2 + Math.random() * 0.3
-      });
-  }
-  scene.add(lasers);
-  sceneObjects.lasers = { mesh: lasers, data: laserData, dummy };
+  const lasers = new THREE.InstancedMesh(laserGeo, laserMat, 100);
+  const dummy = new THREE.Object3D(); const laserData = [];
+  for(let i=0; i<100; i++) laserData.push({ x:(Math.random()-0.5)*8, y:(Math.random()-0.5)*8, z:-15+Math.random()*30, speed:0.2+Math.random()*0.3 });
+  scene.add(lasers); sceneObjects.lasers = { mesh: lasers, data: laserData, dummy };
 }
 
 function updateAnnotations() {
   sceneObjects.annotations.forEach(a => {
-    // Get absolute world position of the anchor object
-    const worldPos = new THREE.Vector3();
-    a.obj.getWorldPosition(worldPos);
-    
+    const worldPos = new THREE.Vector3(); a.obj.getWorldPosition(worldPos);
     worldPos.project(camera);
-    
-    if (worldPos.z > 1) {
-      a.el.style.display = 'none';
-    } else {
+    if (worldPos.z > 1) { a.el.style.display = 'none'; } else {
       a.el.style.display = 'block';
       const x = (worldPos.x + 1) * renderer.domElement.clientWidth / 2;
       const y = (-worldPos.y + 1) * renderer.domElement.clientHeight / 2;
       a.el.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
-      // Fade out if far away or off center
-      const dist = Math.sqrt(worldPos.x*worldPos.x + worldPos.y*worldPos.y);
-      a.el.style.opacity = 1 - dist*0.5;
     }
   });
 }
@@ -386,65 +289,31 @@ function updateAnnotations() {
 function animate(){
   if(dead) return; requestAnimationFrame(animate);
   const t = performance.now()/1000;
-  
-  // Orbit logic
   if(!mouse.dn) camAngle.th += 0.002;
   camera.position.x = Math.sin(camAngle.th)*Math.cos(camAngle.ph)*camAngle.d;
   camera.position.y = Math.sin(camAngle.ph)*camAngle.d + 2;
   camera.position.z = Math.cos(camAngle.th)*Math.cos(camAngle.ph)*camAngle.d;
   camera.lookAt(0,0,0);
 
-  // Exploded View Interpolation
   const explodeMult = isExploded ? 3.0 : 1.0;
   sceneObjects.layers.forEach((layer, i) => {
-      const targetZ = layer.baseZ * explodeMult;
-      layer.group.position.z += (targetZ - layer.group.position.z) * 0.1;
-      
-      // Training Pulse
-      if (layer.isEmissive) {
-          const pulse = 1.0 + Math.sin(t * (5 + trainingProgress * 15) + i) * (0.5 + trainingProgress);
-          layer.mat.emissiveIntensity = pulse;
-      }
+      layer.group.position.z += (layer.baseZ * explodeMult - layer.group.position.z) * 0.1;
+      if (layer.isEmissive) layer.mat.emissiveIntensity = 1.0 + Math.sin(t * (5 + trainingProgress * 15) + i) * (0.5 + trainingProgress);
   });
 
-  // Extras Animation (DoRA)
-  sceneObjects.extras.forEach(e => {
-      if (e.type === 'dora_mag') {
-          e.mesh.scale.setScalar(1 + Math.sin(t*10)*0.05 + trainingProgress*0.3);
-      }
-  });
-
-  // Data Lasers Animation
   if (sceneObjects.lasers) {
       const {mesh, data, dummy} = sceneObjects.lasers;
-      const speedMult = 1 + trainingProgress * 4; // Faster when training
-      
       for(let i=0; i<data.length; i++) {
-          data[i].z += data[i].speed * speedMult;
-          if (data[i].z > 15) data[i].z = -15; // Reset loop
-          
+          data[i].z += data[i].speed * (1 + trainingProgress * 4);
+          if (data[i].z > 15) data[i].z = -15;
           dummy.position.set(data[i].x, data[i].y, data[i].z);
-          // Add sine wave jitter based on training progress
-          dummy.position.x += Math.sin(t*20 + i) * 0.1 * trainingProgress;
-          dummy.position.y += Math.cos(t*20 + i) * 0.1 * trainingProgress;
-          
-          // Color lasers red if full FT, else white/blue
-          if (currentMethod.id === 'full') dummy.scale.setScalar(1 + trainingProgress);
-          
-          dummy.updateMatrix();
-          mesh.setMatrixAt(i, dummy.matrix);
+          dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
       }
       mesh.instanceMatrix.needsUpdate = true;
   }
-
-  updateAnnotations();
-  composer.render(); // Use composer instead of renderer for Bloom
+  updateAnnotations(); composer.render();
 }
 
-document.addEventListener('DOMContentLoaded', ()=>{
-  initThree();
-  pickMethod('lora');
-  animate();
-});
+document.addEventListener('DOMContentLoaded', ()=>{ initThree(); pickMethod('lora'); animate(); });
 </script>
 {% endblock %}
