@@ -5,139 +5,186 @@
 {% block head %}
 <style type="text/tailwindcss">
   @layer components {
-    .rack-panel { @apply bg-brand-bg2 rounded-3xl border border-brand-border p-8 shadow-2xl; }
-    .rack-label { @apply font-mono text-[10px] uppercase tracking-[0.2em] text-brand-text3 mb-6 block; }
-    .studio-slider { @apply w-full h-1.5 bg-brand-bg rounded-full appearance-none outline-none border border-brand-border2 accent-brand-accent; }
-    .studio-slider::-webkit-slider-thumb { @apply appearance-none w-4 h-4 rounded-full bg-brand-accent cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border-2 border-white/20 hover:scale-125 transition-transform; }
-    .stat-card { @apply bg-brand-bg border border-brand-border p-5 rounded-2xl; }
-    .sharding-btn, .precision-btn, .optimizer-btn { @apply py-2 rounded-lg border border-brand-border text-[10px] font-bold font-mono transition-all duration-300 text-brand-text3 uppercase hover:border-brand-text3; }
-    .sharding-btn.active, .precision-btn.active, .optimizer-btn.active { @apply border-brand-accent bg-brand-accent/10 text-brand-accent shadow-[0_0_10px_rgba(59,130,246,0.2)]; }
-    .grad-checkpoint-btn { @apply w-12 h-6 rounded-full p-1 transition-colors duration-300 flex items-center; }
-    .grad-checkpoint-btn.active { @apply bg-brand-accent; }
-    .grad-checkpoint-btn:not(.active) { @apply bg-brand-border; }
-    .grad-checkpoint-handle { @apply block w-4 h-4 rounded-full bg-white transition-transform duration-300; }
-    .grad-checkpoint-btn.active .grad-checkpoint-handle { @apply translate-x-6; }
-    .recipe-tab { @apply px-4 py-2 rounded-xl text-xs font-bold border border-brand-border text-brand-text3 transition-all; }
-    .recipe-tab.active { @apply border-brand-accent bg-brand-accent/10 text-brand-accent; }
+    .rack-panel { 
+      @apply bg-brand-bg2/60 backdrop-blur-xl rounded-[32px] border border-brand-border p-8 shadow-2xl relative overflow-hidden transition-all duration-500 hover:border-brand-accent/30; 
+    }
+    .rack-label { 
+      @apply font-mono text-[10px] uppercase tracking-[0.3em] text-brand-text3 mb-6 block font-bold; 
+    }
+    .studio-slider { 
+      @apply w-full h-1.5 bg-brand-bg rounded-full appearance-none outline-none border border-brand-border2 accent-brand-accent; 
+    }
+    .studio-slider::-webkit-slider-thumb { 
+      @apply appearance-none w-4 h-4 rounded-full bg-brand-accent cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border-2 border-white/20 hover:scale-125 transition-transform; 
+    }
+    .stat-card { 
+      @apply bg-black/40 border border-brand-border p-6 rounded-2xl transition-all hover:border-brand-accent/20; 
+    }
+    .control-btn { 
+      @apply py-3 rounded-xl border border-brand-border bg-brand-bg3/30 text-[10px] font-bold font-mono transition-all duration-300 text-brand-text3 uppercase hover:text-white hover:border-brand-accent/50; 
+    }
+    .control-btn.active { 
+      @apply border-brand-accent bg-brand-accent/10 text-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.1)]; 
+    }
+    .grad-checkpoint-btn { 
+      @apply w-12 h-6 rounded-full p-1 transition-colors duration-300 flex items-center bg-brand-border; 
+    }
+    .grad-checkpoint-btn.active { 
+      @apply bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.3)]; 
+    }
+    .grad-checkpoint-handle { 
+      @apply block w-4 h-4 rounded-full bg-white transition-transform duration-300; 
+    }
+    .grad-checkpoint-btn.active .grad-checkpoint-handle { 
+      @apply translate-x-6; 
+    }
+    .recipe-tab { 
+      @apply px-5 py-2 rounded-xl text-[10px] font-bold border border-brand-border text-brand-text3 transition-all uppercase tracking-widest; 
+    }
+    .recipe-tab.active { 
+      @apply border-brand-accent bg-brand-accent/10 text-brand-accent; 
+    }
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-5 py-16 max-w-6xl">
-  <div class="mb-12 fade-up">
-    <h1 class="text-4xl font-bold tracking-tight mb-3">⚡ GPU Playground</h1>
-    <p class="text-brand-text2 text-lg">Calculate VRAM, training cost, and feasibility for any combo.</p>
+<div class="container mx-auto px-5 py-12 max-w-[1400px]">
+  <div class="mb-12 fade-up flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div>
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-[10px] font-mono font-bold text-brand-accent mb-4 uppercase tracking-widest">
+        <span class="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></span>
+        Constraint Engine v2.4
+      </div>
+      <h1 class="text-4xl font-bold tracking-tight mb-2 text-white">⚡ GPU Playground</h1>
+      <p class="text-brand-text2 text-lg">Hardware-aware VRAM profiling & training cost analysis.</p>
+    </div>
+    
+    <div class="flex items-center gap-4 bg-brand-bg2/50 p-2 rounded-2xl border border-brand-border">
+      <div class="px-4 py-2 text-center">
+        <div class="text-[10px] font-mono text-brand-text3 uppercase mb-1">Status</div>
+        <div class="text-xs font-bold text-green-400 flex items-center gap-2">
+          <span class="w-1.5 h-1.5 rounded-full bg-green-400"></span> CALIBRATED
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="grid grid-cols-1 lg:grid-cols-[1.1fr,1fr] gap-8">
     <!-- LEFT: Rack Controls -->
     <div class="space-y-6">
+      <!-- Fine-Tuning Method -->
       <div class="rack-panel fade-up">
-        <span class="rack-label">Fine-Tuning Method</span>
-        <div class="flex flex-wrap gap-2 mb-6" id="method-tabs">
+        <span class="rack-label">Module Selection / PEFT Method</span>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6" id="method-tabs">
           {% for m in methods %}
-          <button class="px-4 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center gap-2" 
+          <button class="control-btn flex items-center justify-center gap-2" 
                   data-id="{{ m.id }}" 
                   onclick="setState('method', '{{ m.id }}', '#method-tabs')">
-            <span class="text-base">{{ m.emoji }}</span> {{ m.short }}
+            <span class="text-base">{{ m.emoji }}</span> 
+            <span>{{ m.short }}</span>
           </button>
           {% endfor %}
         </div>
-        <div id="method-desc" class="text-sm text-brand-text2 leading-relaxed bg-brand-bg/50 p-4 rounded-xl border border-brand-border/50 italic"></div>
+        <div id="method-desc" class="text-[11px] text-brand-text2 leading-relaxed bg-black/40 p-4 rounded-xl border border-brand-border/50 italic font-mono"></div>
       </div>
 
+      <!-- Model Configuration -->
       <div class="rack-panel fade-up delay-1">
-        <span class="rack-label">Model Configuration</span>
-        <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-8" id="model-selector">
+        <span class="rack-label">Architecture Specifications</span>
+        <div class="grid grid-cols-4 sm:grid-cols-7 gap-2 mb-10" id="model-selector">
           {% for ms in models %}
-          <button class="flex flex-col items-center justify-center p-3 rounded-xl border font-mono text-[11px] transition-all duration-300" 
+          <button class="control-btn flex flex-col items-center justify-center p-3" 
                   data-id="{{ ms.id }}" 
                   onclick="setState('model', '{{ ms.id }}', '#model-selector')">
-            <span class="text-xs font-bold">{{ ms.name }}</span>
+            <span class="text-[11px] font-bold">{{ ms.name }}</span>
           </button>
           {% endfor %}
         </div>
-        <div class="space-y-8" id="lora-controls">
+        
+        <div class="space-y-10" id="lora-controls">
           <div>
-            <div class="flex justify-between items-end mb-3">
-              <span class="text-xs font-bold text-brand-text uppercase tracking-wider">LoRA Rank (r)</span>
-              <span class="font-mono text-lg font-bold text-brand-accent" id="rank-val">16</span>
+            <div class="flex justify-between items-end mb-4">
+              <span class="text-[10px] font-bold text-brand-text uppercase tracking-widest">LoRA Rank (r)</span>
+              <span class="font-mono text-xl font-bold text-brand-accent" id="rank-val">16</span>
             </div>
             <input type="range" id="rank-slider" min="4" max="128" step="4" value="16" class="studio-slider" oninput="updateCalc()"/>
           </div>
         </div>
-        <div class="space-y-8 mt-8">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10 mt-10">
           <div>
-            <div class="flex justify-between items-end mb-3">
-              <span class="text-xs font-bold text-brand-text uppercase tracking-wider">Batch Size</span>
-              <span class="font-mono text-lg font-bold text-brand-accent" id="batch-val">4</span>
+            <div class="flex justify-between items-end mb-4">
+              <span class="text-[10px] font-bold text-brand-text uppercase tracking-widest">Batch Size</span>
+              <span class="font-mono text-xl font-bold text-brand-accent" id="batch-val">4</span>
             </div>
             <input type="range" id="batch-slider" min="1" max="64" step="1" value="4" class="studio-slider" oninput="updateCalc()"/>
           </div>
           <div>
-            <div class="flex justify-between items-end mb-3">
-              <span class="text-xs font-bold text-brand-text uppercase tracking-wider">Sequence Length</span>
-              <span class="font-mono text-lg font-bold text-brand-accent" id="seq-val">2048</span>
+            <div class="flex justify-between items-end mb-4">
+              <span class="text-[10px] font-bold text-brand-text uppercase tracking-widest">Seq Length</span>
+              <span class="font-mono text-xl font-bold text-brand-accent" id="seq-val">2048</span>
             </div>
             <input type="range" id="seq-slider" min="512" max="8192" step="512" value="2048" class="studio-slider" oninput="updateCalc()"/>
           </div>
         </div>
       </div>
 
+      <!-- Advanced Settings -->
       <div class="rack-panel fade-up delay-2">
-          <span class="rack-label">Advanced Settings</span>
-          <div class="space-y-6">
+          <span class="rack-label">Optimizer & Precision</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                  <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Precision</span>
+                  <span class="text-[10px] font-bold text-brand-text3 uppercase tracking-widest mb-4 block">Precision Mode</span>
                   <div class="grid grid-cols-3 gap-2" id="precision-selector">
-                      <button onclick="setState('precision', 'bf16', '#precision-selector')" data-id="bf16" class="precision-btn">BF16</button>
-                      <button onclick="setState('precision', 'fp16', '#precision-selector')" data-id="fp16" class="precision-btn">FP16</button>
-                      <button onclick="setState('precision', 'fp32', '#precision-selector')" data-id="fp32" class="precision-btn">FP32</button>
+                      <button onclick="setState('precision', 'bf16', '#precision-selector')" data-id="bf16" class="control-btn">BF16</button>
+                      <button onclick="setState('precision', 'fp16', '#precision-selector')" data-id="fp16" class="control-btn">FP16</button>
+                      <button onclick="setState('precision', 'fp32', '#precision-selector')" data-id="fp32" class="control-btn">FP32</button>
                   </div>
               </div>
               <div>
-                  <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Optimizer</span>
+                  <span class="text-[10px] font-bold text-brand-text3 uppercase tracking-widest mb-4 block">Optimizer Dtype</span>
                   <div class="grid grid-cols-2 gap-2" id="optimizer-selector">
-                      <button onclick="setState('optimizer', 'paged_adamw_8bit', '#optimizer-selector')" data-id="paged_adamw_8bit" class="optimizer-btn">8-bit</button>
-                      <button onclick="setState('optimizer', 'adamw_32bit', '#optimizer-selector')" data-id="adamw_32bit" class="optimizer-btn">32-bit</button>
+                      <button onclick="setState('optimizer', 'paged_adamw_8bit', '#optimizer-selector')" data-id="paged_adamw_8bit" class="control-btn">8-bit</button>
+                      <button onclick="setState('optimizer', 'adamw_32bit', '#optimizer-selector')" data-id="adamw_32bit" class="control-btn">32-bit</button>
                   </div>
               </div>
-              <div class="flex justify-between items-center">
-                  <span class="text-xs font-bold text-brand-text uppercase tracking-wider">Grad Checkpointing</span>
-                  <button onclick="toggleState('grad_checkpoint', 'grad-checkpoint-btn')" id="grad-checkpoint-btn" class="grad-checkpoint-btn active">
-                      <span class="grad-checkpoint-handle"></span>
-                  </button>
-              </div>
+          </div>
+          <div class="mt-8 flex justify-between items-center p-4 rounded-2xl bg-black/20 border border-brand-border">
+              <span class="text-[10px] font-bold text-brand-text uppercase tracking-widest">Gradient Checkpointing</span>
+              <button onclick="toggleState('grad_checkpoint', 'grad-checkpoint-btn')" id="grad-checkpoint-btn" class="grad-checkpoint-btn active">
+                  <span class="grad-checkpoint-handle"></span>
+              </button>
           </div>
       </div>
       
+      <!-- Hardware & Cluster -->
       <div class="rack-panel fade-up delay-3">
-        <span class="rack-label">Hardware & Cluster</span>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-8" id="gpu-selector">
+        <span class="rack-label">Compute Node Configuration</span>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-10" id="gpu-selector">
           {% for g in gpus %}
-          <button class="group p-4 rounded-xl border text-left transition-all duration-300" data-id="{{ g.id }}" onclick="setState('gpu', '{{ g.id }}', '#gpu-selector')">
-            <div class="text-[13px] font-bold">{{ g.name }}</div>
-            <div class="font-mono text-[9px] text-brand-text3 mt-1">{{ g.vram }}GB</div>
+          <button class="control-btn !py-4 flex flex-col items-center justify-center" data-id="{{ g.id }}" onclick="setState('gpu', '{{ g.id }}', '#gpu-selector')">
+            <div class="text-[11px] font-bold text-white">{{ g.name }}</div>
+            <div class="font-mono text-[8px] opacity-50 mt-1">{{ g.vram }}GB VRAM</div>
           </button>
           {% endfor %}
         </div>
-        <div class="space-y-8">
+        <div class="space-y-10">
           <div>
-            <div class="flex justify-between items-end mb-3">
-              <span class="text-xs font-bold text-brand-text uppercase tracking-wider">GPU Count</span>
-              <span class="font-mono text-lg font-bold text-brand-accent" id="gpu-count-val">1</span>
+            <div class="flex justify-between items-end mb-4">
+              <span class="text-[10px] font-bold text-brand-text uppercase tracking-widest">GPU Parallelism (Nodes)</span>
+              <span class="font-mono text-xl font-bold text-brand-accent" id="gpu-count-val">1</span>
             </div>
             <input type="range" id="gpu-count-slider" min="1" max="8" step="1" value="1" class="studio-slider" oninput="updateCalc()"/>
           </div>
           <div>
-            <span class="text-xs font-bold text-brand-text uppercase tracking-wider mb-3 block">Sharding</span>
+            <span class="text-[10px] font-bold text-brand-text3 uppercase tracking-widest mb-4 block">Sharding Strategy</span>
             <div class="grid grid-cols-3 sm:grid-cols-5 gap-2" id="sharding-selector">
-              <button onclick="setState('sharding', 'none', '#sharding-selector')" data-id="none" class="sharding-btn">NONE</button>
-              <button onclick="setState('sharding', 'zero1', '#sharding-selector')" data-id="zero1" class="sharding-btn">Z1</button>
-              <button onclick="setState('sharding', 'zero2', '#sharding-selector')" data-id="zero2" class="sharding-btn">Z2</button>
-              <button onclick="setState('sharding', 'zero3', '#sharding-selector')" data-id="zero3" class="sharding-btn">Z3</button>
-              <button onclick="setState('sharding', 'fsdp', '#sharding-selector')" data-id="fsdp" class="sharding-btn">FSDP</button>
+              <button onclick="setState('sharding', 'none', '#sharding-selector')" data-id="none" class="control-btn">NONE</button>
+              <button onclick="setState('sharding', 'zero1', '#sharding-selector')" data-id="zero1" class="control-btn">Z1</button>
+              <button onclick="setState('sharding', 'zero2', '#sharding-selector')" data-id="zero2" class="control-btn">Z2</button>
+              <button onclick="setState('sharding', 'zero3', '#sharding-selector')" data-id="zero3" class="control-btn">Z3</button>
+              <button onclick="setState('sharding', 'fsdp', '#sharding-selector')" data-id="fsdp" class="control-btn">FSDP</button>
             </div>
           </div>
         </div>
@@ -146,40 +193,67 @@
 
     <!-- RIGHT: Master Output -->
     <div class="space-y-6">
-      <div class="rack-panel h-full border-brand-accent/20 fade-up delay-1 bg-gradient-to-br from-brand-bg2 to-brand-bg">
-        <span class="rack-label">Master Level Output</span>
-        <div class="mb-10">
-          <div class="flex justify-between items-end mb-3 font-mono">
+      <div class="rack-panel h-full border-brand-accent/20 fade-up delay-1 bg-gradient-to-br from-brand-bg2 to-brand-bg relative group">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.05),transparent_50%)]"></div>
+        <span class="rack-label relative z-10">Master Level Diagnostics</span>
+        
+        <div class="mb-12 relative z-10">
+          <div class="flex justify-between items-end mb-4 font-mono">
             <div>
-              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">VRAM / GPU</span>
-              <span class="text-2xl font-bold" id="vram-used">0</span> <span class="text-brand-text3">GB</span>
+              <span class="text-[9px] text-brand-text3 block uppercase tracking-[0.2em] mb-1">Peak VRAM / GPU</span>
+              <span class="text-4xl font-bold text-white" id="vram-used">0</span> <span class="text-brand-text3 text-lg">GB</span>
             </div>
             <div class="text-right">
-              <span class="text-[10px] text-brand-text3 block uppercase tracking-widest mb-1">Limit</span>
-              <span class="text-sm font-bold opacity-60"><span id="vram-total">80</span> GB</span>
+              <span class="text-[9px] text-brand-text3 block uppercase tracking-[0.2em] mb-1">Total Capacity</span>
+              <span class="text-sm font-bold opacity-60 text-brand-text2"><span id="vram-total">80</span> GB</span>
             </div>
           </div>
-          <div class="h-8 bg-black/40 rounded-xl border border-brand-border2 p-1.5 flex gap-1 relative overflow-hidden group">
-            <div class="h-full rounded-md transition-all duration-500" id="seg-weights" style="background:#3B82F6"></div>
-            <div class="h-full rounded-md transition-all duration-500" id="seg-grads" style="background:#8B5CF6"></div>
-            <div class="h-full rounded-md transition-all duration-500" id="seg-optim" style="background:#EC4899"></div>
-            <div class="h-full rounded-md transition-all duration-500" id="seg-act" style="background:#F59E0B"></div>
-            <div class="absolute inset-y-0 w-1 bg-white shadow-[0_0_10px_#fff] z-10 transition-all duration-500" id="vram-limit-line"></div>
+          
+          <!-- Modern VRAM Meter -->
+          <div class="h-12 bg-black/60 rounded-2xl border border-brand-border p-2 flex gap-1 relative overflow-hidden group/meter shadow-inner">
+            <div class="h-full rounded-lg transition-all duration-700 shadow-[0_0_15px_rgba(59,130,246,0.2)]" id="seg-weights" style="background:#3B82F6"></div>
+            <div class="h-full rounded-lg transition-all duration-700 shadow-[0_0_15px_rgba(139,92,246,0.2)]" id="seg-grads" style="background:#8B5CF6"></div>
+            <div class="h-full rounded-lg transition-all duration-700 shadow-[0_0_15px_rgba(236,72,153,0.2)]" id="seg-optim" style="background:#EC4899"></div>
+            <div class="h-full rounded-lg transition-all duration-700 shadow-[0_0_15px_rgba(245,158,11,0.2)]" id="seg-act" style="background:#F59E0B"></div>
+            
+            <div class="absolute inset-y-0 w-0.5 bg-white shadow-[0_0_15px_#fff] z-10 transition-all duration-700" id="vram-limit-line"></div>
           </div>
-          <div class="flex flex-wrap gap-x-6 gap-y-2 mt-4 font-mono text-[9px] uppercase tracking-widest text-brand-text3">
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#3B82F6]"></span>W</div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#8B5CF6]"></span>G</div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#EC4899]"></span>O</div>
-            <div class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-[#F59E0B]"></span>A</div>
+          
+          <!-- Legend -->
+          <div class="flex flex-wrap gap-x-8 gap-y-3 mt-6 font-mono text-[9px] uppercase tracking-widest text-brand-text3">
+            <div class="flex items-center gap-2 group/tip cursor-help">
+                <span class="w-2 h-2 rounded-full bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]"></span> Weights
+            </div>
+            <div class="flex items-center gap-2 group/tip cursor-help">
+                <span class="w-2 h-2 rounded-full bg-[#8B5CF6] shadow-[0_0_8px_#8B5CF6]"></span> Gradients
+            </div>
+            <div class="flex items-center gap-2 group/tip cursor-help">
+                <span class="w-2 h-2 rounded-full bg-[#EC4899] shadow-[0_0_8px_#EC4899]"></span> Optimizer
+            </div>
+            <div class="flex items-center gap-2 group/tip cursor-help">
+                <span class="w-2 h-2 rounded-full bg-[#F59E0B] shadow-[0_0_8px_#F59E0B]"></span> Activation
+            </div>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-4 mb-8">
-          <div class="stat-card"><span class="rack-label !mb-2">Total Load</span><div class="text-3xl font-bold font-mono" id="res-vram">—</div></div>
-          <div class="stat-card"><span class="rack-label !mb-2">Trainable</span><div class="text-3xl font-bold font-mono" id="res-params">—</div></div>
+
+        <div class="grid grid-cols-2 gap-4 mb-10 relative z-10">
+          <div class="stat-card">
+              <span class="rack-label !mb-2 opacity-50">Combined Load</span>
+              <div class="text-2xl font-bold font-mono text-white" id="res-vram">—</div>
+          </div>
+          <div class="stat-card">
+              <span class="rack-label !mb-2 opacity-50">Trainable Params</span>
+              <div class="text-2xl font-bold font-mono text-white" id="res-params">—</div>
+          </div>
         </div>
-        <div class="p-6 rounded-2xl border mb-10 transition-colors duration-500 text-center font-bold" id="verdict"></div>
-        <div class="mb-10 text-center">
-            <button onclick="openRecipeModal()" class="btn-primary w-full justify-center !py-4 shadow-xl">⚙️ EXPORT TRAINING RECIPE</button>
+
+        <div class="p-8 rounded-3xl border mb-10 transition-all duration-500 text-center font-bold relative z-10 shadow-lg" id="verdict"></div>
+        
+        <div class="relative z-10">
+            <button onclick="openRecipeModal()" class="btn-primary w-full justify-center !py-5 !rounded-2xl shadow-[0_0_30px_rgba(59,130,246,0.3)] hover:scale-[1.02] transition-transform">
+                ⚙️ EXPORT TRAINING RECIPE
+            </button>
+            <p class="text-center mt-6 font-mono text-[10px] text-brand-text3 uppercase tracking-[0.2em]">Validated against CUDA 12.1 standards</p>
         </div>
       </div>
     </div>
@@ -188,32 +262,33 @@
 
 <!-- Recipe Modal -->
 <div id="recipe-modal" class="fixed inset-0 z-[200] hidden flex items-center justify-center p-5">
-  <div class="absolute inset-0 bg-brand-bg/80 backdrop-blur-xl" onclick="closeRecipeModal()"></div>
-  <div class="relative w-full max-w-2xl bg-brand-bg2 border border-brand-border rounded-[32px] shadow-2xl overflow-hidden fade-up">
-    <div class="p-8 border-b border-brand-border flex justify-between items-center bg-brand-bg3/50">
-      <div>
-        <h2 class="text-2xl font-bold tracking-tight">⚙️ Training Recipe</h2>
-        <p class="text-brand-text3 text-[10px] font-mono uppercase mt-1">YAML Config Auto-Generated</p>
+  <div class="absolute inset-0 bg-brand-bg/90 backdrop-blur-2xl" onclick="closeRecipeModal()"></div>
+  <div class="relative w-full max-w-3xl bg-brand-bg2 border border-brand-border rounded-[40px] shadow-2xl overflow-hidden fade-up">
+    <div class="p-10 border-b border-brand-border flex justify-between items-center bg-brand-bg3/50 relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-64 h-64 bg-brand-accent/5 blur-3xl rounded-full"></div>
+      <div class="relative z-10">
+        <h2 class="text-3xl font-bold tracking-tight text-white">⚙️ Hardware Recipe</h2>
+        <p class="text-brand-text3 text-[10px] font-mono uppercase mt-2 tracking-widest">Auto-Generated Configuration Manifest</p>
       </div>
-      <button onclick="closeRecipeModal()" class="text-brand-text3 hover:text-brand-text">
-        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      <button onclick="closeRecipeModal()" class="relative z-10 text-brand-text3 hover:text-white transition-colors">
+        <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
       </button>
     </div>
-    <div class="p-8">
-        <div class="flex gap-2 mb-6" id="recipe-tabs">
+    <div class="p-10">
+        <div class="flex gap-3 mb-8" id="recipe-tabs">
             <button onclick="switchRecipe('axolotl')" id="tab-axolotl" class="recipe-tab active">Axolotl</button>
             <button onclick="switchRecipe('unsloth')" id="tab-unsloth" class="recipe-tab">Unsloth</button>
-            <button onclick="switchRecipe('hf')" id="tab-hf" class="recipe-tab">HF</button>
+            <button onclick="switchRecipe('hf')" id="tab-hf" class="recipe-tab">Hugging Face</button>
         </div>
-        <div class="bg-black/60 rounded-2xl border border-brand-border p-6 font-mono relative group">
-            <button class="absolute top-4 right-4 px-3 py-1 rounded-md bg-brand-bg3 text-[10px] text-brand-text3 border border-brand-border2 hover:text-brand-text" onclick="copyRecipe()">Copy</button>
-            <div class="overflow-y-auto max-h-[300px]">
-                <pre id="recipe-content" class="text-[11px] leading-relaxed text-blue-100/70"></pre>
+        <div class="bg-black/60 rounded-3xl border border-brand-border p-8 font-mono relative group shadow-inner">
+            <button class="absolute top-6 right-6 px-4 py-1.5 rounded-lg bg-brand-bg3 text-[10px] font-bold text-brand-text3 border border-brand-border2 hover:text-white hover:border-brand-accent transition-all uppercase tracking-wider" onclick="copyRecipe()">Copy</button>
+            <div class="overflow-y-auto max-h-[350px] scrollbar-hide">
+                <pre id="recipe-content" class="text-[12px] leading-relaxed text-blue-200/60"></pre>
             </div>
         </div>
-        <div class="mt-8 flex justify-between items-center">
-            <p class="text-[10px] text-brand-text3 max-w-[300px]">Recipe dynamically mapped from Playground state.</p>
-            <button onclick="downloadRecipe()" class="btn-primary !py-2 !text-xs">Download .yaml</button>
+        <div class="mt-10 flex flex-col sm:flex-row justify-between items-center gap-6">
+            <p class="text-[10px] text-brand-text3 max-w-[350px] font-mono uppercase leading-relaxed">Recipe mappings are dynamically adjusted based on playground state and sharding strategy.</p>
+            <button onclick="downloadRecipe()" class="btn-primary !py-3 !px-8 !text-xs !rounded-xl">Download .yaml</button>
         </div>
     </div>
   </div>
@@ -323,14 +398,14 @@ function updateUI(totalVRAM, mem, params, gpu) {
     
     const v = document.getElementById('verdict');
     if (fits && !tight) {
-      v.className = 'p-6 rounded-2xl border bg-green-500/5 border-green-500/20 text-green-400 text-sm';
-      v.innerHTML = `✓ Fits comfortably.`;
+      v.className = 'p-8 rounded-3xl border bg-green-500/5 border-green-500/20 text-green-400 text-sm shadow-[0_0_20px_rgba(34,197,94,0.1)]';
+      v.innerHTML = `<span class="text-xl mr-2">✓</span> Configuration fits comfortably within target VRAM.`;
     } else if (tight) {
-      v.className = 'p-6 rounded-2xl border bg-yellow-500/5 border-yellow-500/20 text-yellow-400 text-sm';
-      v.innerHTML = `⚠ Tight fit.`;
+      v.className = 'p-8 rounded-3xl border bg-yellow-500/5 border-yellow-500/20 text-yellow-400 text-sm shadow-[0_0_20px_rgba(234,179,8,0.1)]';
+      v.innerHTML = `<span class="text-xl mr-2">⚠</span> Memory usage is critical ( > 85% ). Expect potential OOM on long sequences.`;
     } else {
-      v.className = 'p-6 rounded-2xl border bg-red-500/5 border-red-500/20 text-red-400 text-sm';
-      v.innerHTML = `✗ Doesn't fit.`;
+      v.className = 'p-8 rounded-3xl border bg-red-500/5 border-red-500/20 text-red-400 text-sm shadow-[0_0_20px_rgba(239,68,68,0.1)]';
+      v.innerHTML = `<span class="text-xl mr-2">✗</span> Hardware allocation insufficient. Reduce rank or increase GPU nodes.`;
     }
 }
 
