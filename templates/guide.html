@@ -208,7 +208,7 @@ function renderQuestion() {
 
   q.options.forEach(opt => {
     html += `
-      <div class="option-card group" onclick="selectOption('${opt.id}', ${JSON.stringify(opt.tags)})">
+      <div class="option-card group" onclick="selectOption(this, '${opt.id}', ${JSON.stringify(opt.tags)})">
         <div class="w-12 h-12 rounded-xl bg-brand-bg flex items-center justify-center text-2xl border border-brand-border group-hover:border-brand-accent/30 transition-colors">
           ${opt.icon}
         </div>
@@ -309,8 +309,8 @@ function renderResult() {
       <div class="mt-8 pt-8 border-t border-brand-border flex items-center justify-between">
         <button onclick="restart()" class="text-[10px] font-mono text-brand-text3 hover:text-white uppercase tracking-widest transition-all">🔄 Restart Heuristic</button>
         <div class="flex gap-4">
-          <button onclick="copyResult('${winner.name}')" class="text-[10px] font-mono text-brand-text3 hover:text-white uppercase tracking-widest transition-all">📋 Copy Path</button>
-          <button onclick="tweetResult('${winner.name}')" class="text-[10px] font-mono text-brand-text3 hover:text-white uppercase tracking-widest transition-all">𝕏 Tweet</button>
+          <button onclick="copyResult(this, '${winner.name}')" class="text-[10px] font-mono text-brand-text3 hover:text-white uppercase tracking-widest transition-all">📋 Copy Path</button>
+          <button onclick="tweetResult(this, '${winner.name}')" class="text-[10px] font-mono text-brand-text3 hover:text-white uppercase tracking-widest transition-all">𝕏 Tweet</button>
         </div>
       </div>
     </div>
@@ -319,8 +319,8 @@ function renderResult() {
   container.innerHTML = html;
 }
 
-function selectOption(optionId, tags) {
-  event.currentTarget.classList.add('selected');
+function selectOption(el, optionId, tags) {
+  el.classList.add('selected');
   setTimeout(() => {
     answers.push({ question: QUESTIONS[currentStep].id, answer: optionId });
     allTags = allTags.concat(tags);
@@ -370,16 +370,15 @@ function restart() {
   renderProgress(); renderQuestion();
 }
 
-function copyResult(methodName) {
+function copyResult(el, methodName) {
   const text = `The llmviz.studio guide recommended ${methodName} for my LLM fine-tuning project! 🔬\nhttps://llmviz.studio/guide`;
   navigator.clipboard.writeText(text);
-  const btn = event.target;
-  const original = btn.textContent;
-  btn.textContent = '✓ Derived';
-  setTimeout(() => btn.textContent = original, 1500);
+  const original = el.textContent;
+  el.textContent = '✓ Derived';
+  setTimeout(() => el.textContent = original, 1500);
 }
 
-function tweetResult(methodName) {
+function tweetResult(el, methodName) {
   const text = encodeURIComponent(`The llmviz.studio guide recommended ${methodName} for my LLM fine-tuning project! 🔬\n\nhttps://llmviz.studio/guide`);
   window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank');
 }
