@@ -186,6 +186,60 @@ function downloadRecipe() {
   a.click();
 }
 
+async function downloadDevOpsBundle() {
+    // Generate Files
+    const trainPy = `
+import torch
+from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer
+from peft import LoraConfig, get_peft_model
+
+# Config from llmviz.studio
+model_id = "meta-llama/Llama-2-7b-hf"
+peft_config = LoraConfig(
+    r=${state.rank},
+    lora_alpha=${state.rank * 2},
+    target_modules=["q_proj", "v_proj"],
+    task_type="CAUSAL_LM"
+)
+
+model = AutoModelForCausalLM.from_pretrained(model_id, torch_dtype=torch.bfloat16, device_map="auto")
+model = get_peft_model(model, peft_config)
+
+print(f"Training started: rank=${state.rank}, batch=${state.batch}")
+# Add your training loop here
+    `.trim();
+
+    const dockerfile = `
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["python", "train.py"]
+    `.trim();
+
+    const reqs = `
+torch
+transformers
+peft
+accelerate
+bitsandbytes
+    `.trim();
+
+    // Use JSZip (assumes script loaded in base.html)
+    const zip = new JSZip();
+    zip.file("train.py", trainPy);
+    zip.file("Dockerfile", dockerfile);
+    zip.file("requirements.txt", reqs);
+    zip.file("recipe.yaml", document.getElementById('recipe-content').textContent);
+
+    const content = await zip.generateAsync({type:"blob"});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(content);
+    a.download = "llmviz_devops_bundle.zip";
+    a.click();
+}
+
 async function saveRecipe() {
     const name = prompt("Enter a name for this recipe:", "My Llama-2-7b LoRA");
     if (!name) return;
@@ -257,6 +311,115 @@ function initPlaygroundUI() {
     if (currentMethod) {
         document.getElementById('method-desc').textContent = currentMethod.desc;
     }
+}
+
+let simActive = false;
+let simData = [];
+let simInterval;
+
+function toggleSimulation() {
+    const btn = document.getElementById('sim-btn');
+    const overlay = document.getElementById('sim-overlay');
+    
+    if (simActive) {
+        simActive = false;
+        clearInterval(simInterval);
+        btn.innerHTML = '▶ Run Simulation';
+        btn.classList.replace('bg-red-500', 'bg-brand-accent');
+    } else {
+        simActive = true;
+        simData = [];
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+        btn.innerHTML = '⏹ Stop Test';
+        btn.classList.replace('bg-brand-accent', 'bg-red-500');
+        startSimulation();
+    }
+}
+
+function startSimulation() {
+    let loss = 4.5;
+    let step = 0;
+    const maxSteps = 100;
+    
+    // Heuristics based on state
+    const learningRate = state.rank > 64 ? 0.15 : 0.08; 
+    const noiseLevel = Math.max(0.02, 0.2 / state.batch);
+    
+    simInterval = setInterval(() => {
+        if (step >= maxSteps) {
+            clearInterval(simInterval);
+            document.getElementById('sim-status').textContent = 'CONVERGED';
+            return;
+        }
+
+        // Simulating exponential decay + noise
+        const decay = Math.exp(-step * learningRate);
+        const currentLoss = (loss * decay) + (Math.random() * noiseLevel);
+        simData.push(currentLoss);
+        
+        updateSimUI(currentLoss, step);
+        drawLossCurve();
+        step++;
+    }, 100);
+}
+
+function updateSimUI(loss, step) {
+    document.getElementById('sim-loss').textContent = loss.toFixed(4);
+    const statusEl = document.getElementById('sim-status');
+    if (loss > 2.0) {
+        statusEl.textContent = 'LEARNING';
+        statusEl.className = 'text-sm font-mono text-blue-400';
+    } else if (loss > 0.5) {
+        statusEl.textContent = 'STABLE';
+        statusEl.className = 'text-sm font-mono text-green-400';
+    } else {
+        statusEl.textContent = 'FINALIZING';
+        statusEl.className = 'text-sm font-mono text-brand-accent';
+    }
+}
+
+function drawLossCurve() {
+    const canvas = document.getElementById('loss-canvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    
+    // Set internal resolution if needed
+    if (canvas.width !== canvas.offsetWidth) {
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    if (simData.length < 2) return;
+
+    ctx.beginPath();
+    ctx.strokeStyle = '#3B82F6';
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+
+    const padding = 20;
+    const graphWidth = canvas.width - padding * 2;
+    const graphHeight = canvas.height - padding * 2;
+    
+    simData.forEach((val, i) => {
+        const x = padding + (i / 100) * graphWidth;
+        const y = padding + (1 - (val / 5)) * graphHeight; // Assuming loss starts at 5
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    
+    ctx.stroke();
+
+    // Fill area under curve
+    ctx.lineTo(padding + ((simData.length-1) / 100) * graphWidth, canvas.height - padding);
+    ctx.lineTo(padding, canvas.height - padding);
+    const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
+    grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
 }
 
 function initPlayground() {
