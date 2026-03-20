@@ -70,7 +70,7 @@ function initThree() {
   
   renderer = new THREE.WebGLRenderer({canvas:cvs, antialias:true, alpha: true});
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
   
   // High-End Environment
   scene.add(new THREE.AmbientLight(0xffffff, 0.3));
@@ -157,6 +157,7 @@ function initThree() {
 function createWaferLayer(def, methodColor) {
     const group = new THREE.Group();
     
+    // Wafer Instancing
     const sliceZ = 0.1;
     const gap = 0.2;
     const totalDepth = def.slices * (sliceZ + gap);
@@ -181,6 +182,7 @@ function createWaferLayer(def, methodColor) {
     }
     group.add(imesh);
 
+    // Bounding Wireframe
     const boundGeo = new THREE.BoxGeometry(def.w * 0.5 + 0.2, def.h * 0.5 + 0.2, totalDepth + 0.2);
     const wireMat = new THREE.LineBasicMaterial({ color: THEME.wireframe, transparent: true, opacity: 0.2 });
     const wire = new THREE.LineSegments(new THREE.EdgesGeometry(boundGeo), wireMat);
@@ -193,6 +195,7 @@ function rebuildScene() {
     if (!scene) return;
     if (!currentMethod) currentMethod = METHODS[0];
 
+    // Clear specific objects, keep lights/floor/chassis
     const keep = [];
     scene.children.forEach(c => {
         if (c.type === 'AmbientLight' || c.type === 'DirectionalLight' || c.type === 'PointLight' || c.geometry?.type === 'PlaneGeometry' || c.type === 'LineSegments') {
@@ -210,7 +213,7 @@ function rebuildScene() {
             }
             scene.remove(o);
         } else {
-            scene.remove(o); 
+            scene.remove(o); // Re-add later
         }
     }
     keep.forEach(k => scene.add(k));
@@ -251,6 +254,7 @@ function rebuildScene() {
 }
 
 function initDataParticles() {
+    // Forward Pass (Inference/Compute)
     const fCount = 1500;
     const fGeo = new THREE.BufferGeometry();
     const fPos = new Float32Array(fCount * 3);
@@ -264,6 +268,7 @@ function initDataParticles() {
     const fPoints = new THREE.Points(fGeo, fMat);
     scene.add(fPoints);
 
+    // Backward Pass (Gradients)
     const bCount = 1000;
     const bGeo = new THREE.BufferGeometry();
     const bPos = new Float32Array(bCount * 3);
@@ -286,43 +291,55 @@ function animate() {
     requestAnimationFrame(animate);
     
     time += 0.005;
+    const dt = 0.016;
 
+    // Cinematic Camera Drift
     let targetTh = camAngle.th;
     let targetPh = camAngle.ph;
     
     if(!mouse.dn && !focusedLayerId) {
         targetTh += time * 0.02;
+        // Drone-like wobble
         targetPh += Math.sin(time) * 0.01;
     }
 
     camera.position.x = Math.sin(targetTh) * Math.cos(targetPh) * camAngle.d;
-    camera.position.y = Math.sin(targetPh) * camAngle.d + 2 + Math.sin(time*2)*0.5; 
+    camera.position.y = Math.sin(targetPh) * camAngle.d + 2 + Math.sin(time*2)*0.5; // Vertical bob
     camera.position.z = Math.cos(targetTh) * Math.cos(targetPh) * camAngle.d;
     camera.lookAt(0, 0, 0);
 
+    // RGB Shift intensity based on training
     if (rgbShiftPass) {
         rgbShiftPass.uniforms['amount'].value = 0.001 + (trainingProgress * 0.003);
     }
 
+    // Explode Logic & Layer Animation
     const explodeMult = isExploded ? 2.5 : 1.0;
     sceneObjects.layers.forEach((layer, i) => {
+        // Move entire group
         layer.group.position.z += (layer.baseZ * explodeMult - layer.group.position.z) * 0.1;
         
+        // Unstack Wafers if focused
         const dummy = new THREE.Object3D();
         const unstackTarget = (focusedLayerId === layer.id && isExploded) ? 1.5 : 1.0;
         
         for(let j=0; j<layer.slices; j++) {
+            // Read current matrix
             const mat = new THREE.Matrix4();
             layer.imesh.getMatrixAt(j, mat);
             const pos = new THREE.Vector3().setFromMatrixPosition(mat);
+            
+            // Target Z
             const targetZ = (j - layer.slices/2) * (layer.sliceZ + layer.gap) * unstackTarget;
             pos.z += (targetZ - pos.z) * 0.1;
+            
             dummy.position.copy(pos);
             dummy.updateMatrix();
             layer.imesh.setMatrixAt(j, dummy.matrix);
         }
         layer.imesh.instanceMatrix.needsUpdate = true;
 
+        // Weight Excitation (Pulsing when training)
         if (layer.isEmissive || trainingProgress > 0) {
             const baseGlow = layer.isEmissive ? 0.5 : 0;
             const trainGlow = Math.sin(time * 10 + i) * trainingProgress * 2;
@@ -331,10 +348,11 @@ function animate() {
         }
     });
 
+    // Bi-Directional Flow
     if (sceneObjects.forwardParticles) {
         const {pos} = sceneObjects.forwardParticles;
         for(let i=0; i<pos.length/3; i++) {
-            pos[i*3+2] += 0.2 * (1 + trainingProgress * 2); 
+            pos[i*3+2] += 0.2 * (1 + trainingProgress * 2); // Forward +z
             if(pos[i*3+2] > 25) pos[i*3+2] = -25;
         }
         sceneObjects.forwardParticles.points.geometry.attributes.position.needsUpdate = true;
@@ -342,10 +360,10 @@ function animate() {
     
     if (sceneObjects.backwardParticles) {
         const {pos, points} = sceneObjects.backwardParticles;
-        points.visible = trainingProgress > 0;
+        points.visible = trainingProgress > 0; // Only show backwards on training
         if (points.visible) {
             for(let i=0; i<pos.length/3; i++) {
-                pos[i*3+2] -= 0.15 * (trainingProgress * 4); 
+                pos[i*3+2] -= 0.15 * (trainingProgress * 4); // Backward -z
                 if(pos[i*3+2] < -25) pos[i*3+2] = 25;
             }
             points.geometry.attributes.position.needsUpdate = true;
@@ -358,19 +376,15 @@ function animate() {
 
 function checkClick(e) {
     raycaster.setFromCamera(mouse, camera);
-    const meshes = [];
-    scene.traverse(o => { if (o.isMesh || o.isInstancedMesh) meshes.push(o); });
-    const intersects = raycaster.intersectObjects(meshes, true);
+    const intersects = raycaster.intersectObjects(scene.children, true);
     
     if (intersects.length > 0) {
         let obj = intersects[0].object;
         let layer = null;
-        let current = obj;
-        while (current) {
-            layer = sceneObjects.layers.find(l => l.group === current || l.imesh === current);
-            if (layer) break;
-            current = current.parent;
-        }
+        sceneObjects.layers.forEach(l => {
+            if (l.imesh === obj || l.group === obj.parent || l.group === obj.parent?.parent) layer = l;
+        });
+
         if (layer) {
             const arch = ARCH.find(a => a.id === layer.id);
             if (arch) {
@@ -388,34 +402,42 @@ function focusLayer(arch, layer) {
     const side = document.getElementById('side-insight');
     if (side) side.classList.remove('translate-x-[400px]');
     
-    document.getElementById('side-title').textContent = arch.name;
-    document.getElementById('side-desc').textContent = arch.desc;
-    document.getElementById('side-math').textContent = arch.math;
+    const titleEl = document.getElementById('side-title');
+    if(titleEl) titleEl.textContent = arch.name;
+    
+    const descEl = document.getElementById('side-desc');
+    if(descEl) descEl.textContent = arch.desc;
+    
+    const mathEl = document.getElementById('side-math');
+    if(mathEl) mathEl.textContent = arch.math;
     
     const specsContainer = document.getElementById('side-specs');
     if (specsContainer) {
         specsContainer.innerHTML = Object.entries(arch.specs).map(([k, v]) => `
-            <div class="p-3 rounded-xl bg-black/40 border border-brand-accent/20">
+            <div class="p-3 rounded-xl bg-black/40 border border-brand-accent/20 shadow-[0_0_10px_rgba(0,242,255,0.05)]">
                 <div class="text-[7px] text-brand-text3 uppercase mb-1 font-bold">${k}</div>
                 <div class="text-[10px] font-bold text-white truncate">${v}</div>
             </div>
         `).join('');
     }
 
+    // Isolate visually
     sceneObjects.layers.forEach(l => {
         const isTarget = l.id === arch.id;
         l.mat.opacity = isTarget ? 0.8 : 0.05;
         l.wire.material.opacity = isTarget ? 0.5 : 0.02;
     });
     
-    camAngle.d = 20; 
-    if (!isExploded) toggleExplode(); 
+    camAngle.d = 20; // Zoom in
+    if (!isExploded) toggleExplode(); // Auto-explode to see wafers
 }
 
 function unfocusLayer() {
     focusedLayerId = null;
     const side = document.getElementById('side-insight');
     if (side) side.classList.add('translate-x-[400px]');
+    
+    // Restore
     sceneObjects.layers.forEach(l => {
         l.mat.opacity = 0.5;
         l.wire.material.opacity = 0.2;
@@ -461,8 +483,10 @@ function pickMethod(id) {
 
   const descEl = document.getElementById('desc-text');
   if (descEl) descEl.textContent = currentMethod.desc;
+  
   const insightEl = document.getElementById('insight-text');
   if (insightEl) insightEl.textContent = currentMethod.insight;
+  
   const formulaText = document.getElementById('formula-text');
   if (formulaText) {
     formulaText.textContent = currentMethod.formula;
@@ -486,17 +510,19 @@ function checkHover(e) {
     const intersects = raycaster.intersectObjects(meshes, true);
     const tooltip = document.getElementById('hover-tooltip');
     if (!tooltip) return;
-    if (focusedLayerId) { tooltip.classList.add('hidden'); return; }
+    
+    // Don't show tooltip if sidebar is open
+    if (focusedLayerId) {
+        tooltip.classList.add('hidden');
+        return;
+    }
 
     if (intersects.length > 0) {
         let obj = intersects[0].object;
         let layer = null;
-        let current = obj;
-        while (current) {
-            layer = sceneObjects.layers.find(l => l.group === current || l.imesh === current);
-            if (layer) break;
-            current = current.parent;
-        }
+        sceneObjects.layers.forEach(l => {
+            if (l.imesh === obj || l.group === obj.parent || l.group === obj.parent?.parent) layer = l;
+        });
         if (layer) {
             tooltip.classList.remove('hidden');
             tooltip.style.left = `${e.clientX + 20}px`;
@@ -504,7 +530,9 @@ function checkHover(e) {
             const arch = ARCH.find(a => a.id === layer.id);
             document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER';
             const dimText = arch ? `SLICES: ${layer.slices} (Depth)` : 'NODE: ACTIVE';
-            document.getElementById('tooltip-dim').innerHTML = `${dimText}<br><span class="text-brand-text3 text-[8px] mt-1 block uppercase tracking-widest font-bold">Click to drill down</span>`;
+            document.getElementById('tooltip-dim').innerHTML = `${dimText}<br><span class="text-brand-text3 text-[8px] mt-1 block">CLICK TO ISOLATE</span>`;
+            
+            // Highlight cursor
             document.getElementById('three-canvas').style.cursor = 'pointer';
             return;
         }

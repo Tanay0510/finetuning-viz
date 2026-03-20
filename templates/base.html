@@ -13,6 +13,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/RGBShiftShader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     <script>
         tailwind.config = {
@@ -53,6 +54,11 @@
             .nav-link { @apply px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-300; }
             .nav-link-active { @apply text-brand-accent bg-brand-accent/10 border border-brand-accent/20 shadow-[0_0_15px_rgba(0,242,255,0.1)]; }
             .nav-link-inactive { @apply text-brand-text3 hover:text-brand-text2 hover:bg-white/5; }
+            .scanlines {
+                background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+                background-size: 100% 4px;
+                pointer-events: none;
+            }
         }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
