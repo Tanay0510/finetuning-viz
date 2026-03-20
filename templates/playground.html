@@ -236,7 +236,7 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4 mb-10 relative z-10">
+        <div class="grid grid-cols-2 gap-4 mb-6 relative z-10">
           <div class="stat-card">
               <span class="rack-label !mb-2 opacity-50">Combined Load</span>
               <div class="text-2xl font-bold font-mono text-white" id="res-vram">—</div>
@@ -245,6 +245,14 @@
               <span class="rack-label !mb-2 opacity-50">Trainable Params</span>
               <div class="text-2xl font-bold font-mono text-white" id="res-params">—</div>
           </div>
+        </div>
+
+        <!-- NEW: Detailed Breakdown -->
+        <div class="bg-black/40 rounded-3xl border border-brand-border p-6 mb-10 relative z-10">
+            <span class="rack-label !mb-4 opacity-50">VRAM Budget Breakdown</span>
+            <div class="space-y-3" id="vram-breakdown">
+                <!-- Items like Weights: 14GB will go here -->
+            </div>
         </div>
 
         <div class="p-8 rounded-3xl border mb-10 transition-all duration-500 text-center font-bold relative z-10 shadow-lg" id="verdict"></div>
@@ -288,7 +296,10 @@
         </div>
         <div class="mt-10 flex flex-col sm:flex-row justify-between items-center gap-6">
             <p class="text-[10px] text-brand-text3 max-w-[350px] font-mono uppercase leading-relaxed">Recipe mappings are dynamically adjusted based on playground state and sharding strategy.</p>
-            <button onclick="downloadRecipe()" class="btn-primary !py-3 !px-8 !text-xs !rounded-xl">Download .yaml</button>
+            <div class="flex gap-4">
+                <button onclick="saveRecipe()" class="btn-ghost !py-3 !px-8 !text-xs !rounded-xl">Save to Profile</button>
+                <button onclick="downloadRecipe()" class="btn-primary !py-3 !px-8 !text-xs !rounded-xl">Download .yaml</button>
+            </div>
         </div>
     </div>
   </div>

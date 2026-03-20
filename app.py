@@ -30,13 +30,21 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-# ── User Model ──
+# ── Models ──
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
     name = db.Column(db.String(100), nullable=False)
+    recipes = db.relationship('Recipe', backref='author', lazy=True)
+
+class Recipe(db.Model):
+    __tablename__ = 'recipes'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    config = db.Column(db.JSON, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -134,6 +142,27 @@ def api_config():
         "gpus": GPUS,
         "models": MODEL_SIZES
     })
+
+@app.route("/api/recipes", methods=['GET', 'POST'])
+@login_required
+def api_recipes():
+    if request.method == 'POST':
+        data = request.json
+        new_recipe = Recipe(
+            name=data.get('name', 'Untitled Recipe'),
+            config=data.get('config'),
+            user_id=current_user.id
+        )
+        db.session.add(new_recipe)
+        db.session.commit()
+        return jsonify({"message": "Recipe saved", "id": new_recipe.id})
+    
+    recipes = Recipe.query.filter_by(user_id=current_user.id).all()
+    return jsonify([{
+        "id": r.id,
+        "name": r.name,
+        "config": r.config
+    } for r in recipes])
 
 @app.route("/api/methods")
 def api_methods():
