@@ -23,6 +23,7 @@ function toggleState(key, btnId) {
 }
 
 function updateCalc() {
+  // ... (sliders setup)
   state.rank = parseInt(document.getElementById('rank-slider').value);
   state.batch = parseInt(document.getElementById('batch-slider').value);
   state.seq = parseInt(document.getElementById('seq-slider').value);
@@ -30,18 +31,14 @@ function updateCalc() {
   state.dataset_size = parseInt(document.getElementById('dataset-slider').value);
   state.epochs = parseInt(document.getElementById('epochs-slider').value);
   
+  // Update labels
   document.getElementById('rank-val').textContent = state.rank;
   document.getElementById('batch-val').textContent = state.batch;
   document.getElementById('seq-val').textContent = state.seq;
   document.getElementById('gpu-count-val').textContent = state.gpu_count;
   document.getElementById('dataset-val').textContent = state.dataset_size;
   document.getElementById('epochs-val').textContent = state.epochs;
-  
-  const loraControls = document.getElementById('lora-controls');
-  if (loraControls) {
-    loraControls.style.display = ['lora','qlora','dora'].includes(state.method) ? 'block' : 'none';
-  }
-  
+
   const m = METHODS.find(x => x.id === state.method);
   const gpu = GPUS.find(x => x.id === state.gpu);
   const mdl = MODELS.find(x => x.id === state.model);
@@ -50,6 +47,12 @@ function updateCalc() {
   const precisionBytes = {'bf16': 2, 'fp16': 2, 'fp32': 4}[state.precision];
   const optimizerBytes = state.optimizer === 'adamw_32bit' ? 8 : 1;
 
+  // Refinement: GQA (Grouped Query Attention) logic
+  // Llama-3 and larger models use GQA where KV heads < Query heads.
+  // This reduces activation memory for KV cache significantly.
+  const numHeads = 32; 
+  const gqaRatio = (P >= 70) ? 0.125 : (P >= 8 ? 0.25 : 1.0); // 70B uses 1/8 heads, 8B uses 1/4 heads
+  
   let weightsGB, gradsGB, optimGB, actGB, trainableParams;
   const totalParams = P * 1e9;
 
@@ -66,7 +69,9 @@ function updateCalc() {
     optimGB = (adapterParams * optimizerBytes) / 1e9;
   }
   
-  actGB = (B * S * D * L * precisionBytes) / 1e9;
+  // Activation memory refined with GQA
+  const kvFactor = (1 + 2 * gqaRatio); // 1 for Q, gqaRatio for K and V
+  actGB = (B * S * D * L * precisionBytes * kvFactor) / (numHeads * 1e9);
   if(state.grad_checkpoint) actGB *= 0.55;
   actGB = Math.min(actGB, 25);
 
@@ -342,7 +347,6 @@ function startSimulation() {
     let step = 0;
     const maxSteps = 100;
     
-    // Heuristics based on state
     const learningRate = state.rank > 64 ? 0.15 : 0.08; 
     const noiseLevel = Math.max(0.02, 0.2 / state.batch);
     
@@ -353,11 +357,25 @@ function startSimulation() {
             return;
         }
 
-        // Simulating exponential decay + noise
+        // Simulating exponential decay + noise + technical spikes
         const decay = Math.exp(-step * learningRate);
-        const currentLoss = (loss * decay) + (Math.random() * noiseLevel);
-        simData.push(currentLoss);
+        let currentLoss = (loss * decay) + (Math.random() * noiseLevel);
         
+        // --- NEW: Training Events ---
+        // 1. Loss Spikes (Gradient Explosion simulation)
+        if (learningRate > 0.1 && Math.random() < 0.1) {
+            currentLoss += 1.5;
+            document.getElementById('sim-status').textContent = 'LR SPIKE';
+            document.getElementById('sim-status').className = 'text-sm font-mono text-red-400';
+        }
+        
+        // 2. Plateaus (Low rank / bottleneck simulation)
+        if (state.rank < 16 && step > 40 && Math.random() < 0.05) {
+            currentLoss = simData[simData.length - 1] || currentLoss;
+            document.getElementById('sim-status').textContent = 'PLATEAU';
+        }
+
+        simData.push(currentLoss);
         updateSimUI(currentLoss, step);
         drawLossCurve();
         step++;

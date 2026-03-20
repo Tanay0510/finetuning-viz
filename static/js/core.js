@@ -18,6 +18,15 @@ window.App = {
             
             // Dispatch event so other scripts know data is ready
             document.dispatchEvent(new CustomEvent('configReady', { detail: this.config }));
+
+            // Hide Global Loader
+            setTimeout(() => {
+                const loader = document.getElementById('global-loader');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 700);
+                }
+            }, 500);
         } catch (error) {
             console.error('Failed to load application configuration:', error);
         }

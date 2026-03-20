@@ -80,6 +80,12 @@
       <!-- 3D Annotations Container -->
       <div id="annotations" class="absolute inset-0 pointer-events-none z-20"></div>
 
+      <!-- Hover Tooltip -->
+      <div id="hover-tooltip" class="absolute hidden z-50 bg-black/90 backdrop-blur-xl border border-brand-accent/40 px-4 py-2.5 rounded-xl shadow-2xl pointer-events-none transition-opacity duration-300">
+          <div class="text-brand-accent text-[9px] font-mono font-bold uppercase tracking-widest mb-1" id="tooltip-title">LAYER_INFO</div>
+          <div class="text-white text-xs font-mono" id="tooltip-dim">0 x 0</div>
+      </div>
+
       <canvas id="three-canvas" class="w-full h-full cursor-grab active:cursor-grabbing outline-none"></canvas>
     </div>
 
