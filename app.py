@@ -57,7 +57,9 @@ class Recipe(db.Model):
     __tablename__ = 'recipes'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=True)
     config = db.Column(db.JSON, nullable=False)
+    is_public = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
 @login_manager.user_loader
@@ -176,6 +178,11 @@ def compare():
 def attention():
     return render_template("attention.html", methods=METHODS)
 
+@app.route("/quantize")
+@login_required
+def quantize():
+    return render_template("quantize.html", methods=METHODS)
+
 @app.route("/api/config")
 def api_config():
     return jsonify({
@@ -191,7 +198,9 @@ def api_recipes():
         data = request.json
         new_recipe = Recipe(
             name=data.get('name', 'Untitled Recipe'),
+            description=data.get('description', ''),
             config=data.get('config'),
+            is_public=data.get('is_public', False),
             user_id=current_user.id
         )
         db.session.add(new_recipe)
@@ -202,8 +211,27 @@ def api_recipes():
     return jsonify([{
         "id": r.id,
         "name": r.name,
-        "config": r.config
+        "description": r.description,
+        "config": r.config,
+        "is_public": r.is_public
     } for r in recipes])
+
+@app.route("/api/recipes/<int:recipe_id>")
+def api_get_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    # Only allow if public or if it's the owner
+    if not recipe.is_public and (not current_user.is_authenticated or recipe.user_id != current_user.id):
+        return jsonify({"error": "Unauthorized"}), 403
+    return jsonify({
+        "id": recipe.id,
+        "name": recipe.name,
+        "config": recipe.config
+    })
+
+@app.route("/zoo")
+def zoo():
+    public_recipes = Recipe.query.filter_by(is_public=True).all()
+    return render_template("zoo.html", recipes=public_recipes, methods=METHODS)
 
 @app.route("/api/methods")
 def api_methods():

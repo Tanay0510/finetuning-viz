@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% set active_page = "quantize" %}
+{% block title %}Quantization Visualizer — llmviz.studio{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-5 py-16 max-w-6xl">
+  <div class="mb-12 fade-up">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-[10px] font-mono font-bold text-brand-accent mb-4 uppercase tracking-widest">
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></span>
+      Numerical Precision Laboratory
+    </div>
+    <h1 class="text-4xl font-bold tracking-tight mb-3">💎 Bit-Depth Visualizer</h1>
+    <p class="text-brand-text2 text-lg">See how Quantization (4-bit, 8-bit) compresses model weights and impacts intelligence.</p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-[350px,1fr] gap-12">
+    <!-- Controls -->
+    <div class="space-y-8 fade-up delay-1">
+        <div class="rack-panel">
+            <span class="rack-label">Numerical Precision</span>
+            <div class="space-y-6">
+                <div>
+                    <div class="flex justify-between items-end mb-4">
+                        <span class="text-[10px] font-bold text-brand-text uppercase tracking-widest">Target Bits</span>
+                        <span class="font-mono text-xl font-bold text-brand-accent" id="bit-val">16-bit</span>
+                    </div>
+                    <input type="range" id="bit-slider" min="2" max="32" step="2" value="16" class="studio-slider" oninput="updateQuantization()"/>
+                </div>
+                
+                <div class="p-4 rounded-xl bg-black/40 border border-brand-border space-y-3">
+                    <div class="flex justify-between text-[10px] font-mono">
+                        <span class="text-brand-text3 uppercase">Method</span>
+                        <span class="text-white font-bold" id="quant-method">FP16 (Half)</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] font-mono">
+                        <span class="text-brand-text3 uppercase">Compression</span>
+                        <span class="text-green-400 font-bold" id="quant-comp">2.0x</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="terminal-box">
+            <div class="hud-label">Theory</div>
+            <p class="text-brand-text2 text-xs leading-relaxed" id="quant-theory">
+                16-bit precision uses 2 bytes per parameter. It is the standard for modern LLM training, providing a perfect balance between accuracy and memory efficiency.
+            </p>
+        </div>
+    </div>
+
+    <!-- Visual Canvas -->
+    <div class="space-y-6 fade-up delay-2">
+        <div class="relative rounded-[40px] overflow-hidden border border-brand-border bg-[#020408] aspect-video flex flex-col items-center justify-center p-12">
+            <div class="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,var(--tw-gradient-stops))] from-brand-accent via-transparent to-transparent"></div>
+            
+            <div class="w-full max-w-2xl relative z-10">
+                <div class="text-[10px] font-mono text-brand-text3 uppercase mb-4 tracking-[0.3em] text-center">Weight Distribution (Signal vs. Noise)</div>
+                <canvas id="quant-canvas" class="w-full h-64"></canvas>
+            </div>
+
+            <div class="grid grid-cols-2 gap-12 w-full max-w-2xl mt-12 relative z-10">
+                <div class="text-center">
+                    <div class="text-[9px] font-mono text-brand-text3 uppercase mb-2">Original Signal</div>
+                    <div class="h-2 rounded-full bg-brand-bg3 overflow-hidden border border-brand-border">
+                        <div class="h-full bg-brand-text2 opacity-20 w-full"></div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <div class="text-[9px] font-mono text-brand-text3 uppercase mb-2">Quantized Output</div>
+                    <div class="h-2 rounded-full bg-brand-bg3 overflow-hidden border border-brand-border">
+                        <div class="h-full bg-brand-accent w-full transition-all duration-500" id="quant-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="p-8 rounded-3xl bg-brand-bg2 border border-brand-border">
+                <h4 class="font-bold mb-2">Why Quantize?</h4>
+                <p class="text-brand-text2 text-sm leading-relaxed">Large models like Llama-3 70B require 140GB of VRAM in FP16. By quantizing to 4-bit, we can fit that same model into 40GB, allowing it to run on consumer hardware with minimal loss in perplexity.</p>
+            </div>
+            <div class="p-8 rounded-3xl bg-brand-bg2 border border-brand-border">
+                <h4 class="font-bold mb-2">The "Quantization Tax"</h4>
+                <p class="text-brand-text2 text-sm leading-relaxed">Reducing bit-depth introduces "rounding errors." Below 4 bits, the model's ability to reason begins to degrade sharply as the weights can no longer represent subtle linguistic nuances.</p>
+            </div>
+        </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/quantize.js') }}"></script>
+{% endblock %}

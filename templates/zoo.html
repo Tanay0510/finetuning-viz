@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% set active_page = "zoo" %}
+{% block title %}LoRA Recipe Zoo — llmviz.studio{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-5 py-16 max-w-6xl">
+  <div class="mb-12 fade-up">
+    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-[10px] font-mono font-bold text-brand-accent mb-4 uppercase tracking-widest">
+      <span class="w-1.5 h-1.5 rounded-full bg-brand-accent animate-pulse"></span>
+      Community Configurations
+    </div>
+    <h1 class="text-4xl font-bold tracking-tight mb-3">🦁 LoRA Recipe Zoo</h1>
+    <p class="text-brand-text2 text-lg">Browse and clone high-performance fine-tuning configurations from the community.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 fade-up delay-1">
+    {% for r in recipes %}
+    <div class="bg-brand-bg2 border border-brand-border rounded-[32px] p-8 hover:border-brand-accent/30 transition-all group relative overflow-hidden">
+      <div class="absolute top-0 right-0 w-32 h-32 bg-brand-accent/5 blur-3xl rounded-full group-hover:bg-brand-accent/10 transition-colors"></div>
+      
+      <div class="relative z-10">
+        <div class="flex justify-between items-start mb-6">
+          <div class="px-3 py-1 rounded-lg bg-black/40 border border-brand-border text-[10px] font-mono font-bold text-brand-accent uppercase tracking-wider">
+            {{ r.config.method | upper }}
+          </div>
+          <span class="text-[10px] font-mono text-brand-text3 uppercase tracking-widest">by {{ r.author.name }}</span>
+        </div>
+
+        <h3 class="text-xl font-bold mb-2 group-hover:text-white transition-colors">{{ r.name }}</h3>
+        <p class="text-brand-text2 text-xs leading-relaxed mb-6 line-clamp-2 h-8 opacity-80">{{ r.description or 'No description provided.' }}</p>
+
+        <div class="grid grid-cols-2 gap-3 mb-8">
+          <div class="p-3 rounded-xl bg-black/20 border border-brand-border">
+            <div class="text-[8px] text-brand-text3 uppercase mb-1 font-bold">Model</div>
+            <div class="text-xs font-bold text-brand-text">{{ r.config.model | upper }}</div>
+          </div>
+          <div class="p-3 rounded-xl bg-black/20 border border-brand-border">
+            <div class="text-[8px] text-brand-text3 uppercase mb-1 font-bold">Rank</div>
+            <div class="text-xs font-bold text-brand-text">r={{ r.config.rank }}</div>
+          </div>
+        </div>
+
+        <a href="/playground?clone={{ r.id }}" class="btn-primary w-full justify-center !py-3 !rounded-xl !text-xs">
+          🚀 USE THIS RECIPE
+        </a>
+      </div>
+    </div>
+    {% else %}
+    <div class="col-span-full py-24 text-center border-2 border-dashed border-brand-border rounded-[40px]">
+        <div class="text-4xl mb-4 opacity-20">🧊</div>
+        <p class="text-brand-text3 font-mono text-sm uppercase tracking-widest">The Zoo is currently empty.<br/>Be the first to share a recipe!</p>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
