@@ -3,5 +3,7 @@ gunicorn>=21.2
 flask-sqlalchemy
 flask-migrate
 flask-login
+authlib
+requests
 werkzeug
 psycopg2-binary
