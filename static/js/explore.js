@@ -8,12 +8,80 @@ let isExploded = false;
 let trainingProgress = 0;
 
 const ARCH = [
-  { id: 'embed', name: 'EMBEDDING_VECT', baseZ: -10, color: 0x475569, w: 8, h: 8 },
-  { id: 'qkv', name: 'ATTN_QKV_HEADS', baseZ: -4, color: 0x3B82F6, w: 12, h: 12 },
-  { id: 'proj', name: 'DENSE_PROJECTION', baseZ: 2, color: 0x8B5CF6, w: 10, h: 10 },
-  { id: 'ffn1', name: 'FFN_UP_GATE', baseZ: 8, color: 0xEC4899, w: 16, h: 8 },
-  { id: 'ffn2', name: 'FFN_DOWN_PROJ', baseZ: 14, color: 0x10B981, w: 10, h: 10 }
+  { 
+    id: 'embed', name: 'EMBEDDING_VECT', baseZ: -10, color: 0x475569, w: 8, h: 8,
+    desc: 'Transforms discrete tokens (words) into continuous vectors. This is where the model "conceptualizes" the meaning of text.'
+  },
+  { 
+    id: 'qkv', name: 'ATTN_QKV_HEADS', baseZ: -4, color: 0x3B82F6, w: 12, h: 12,
+    desc: 'Query, Key, and Value matrices. The core of Self-Attention that allows the model to find relationships between words.'
+  },
+  { 
+    id: 'proj', name: 'DENSE_PROJECTION', baseZ: 2, color: 0x8B5CF6, w: 10, h: 10,
+    desc: 'Combines outputs from multiple attention heads back into a unified vector for the next stage of processing.'
+  },
+  { 
+    id: 'ffn1', name: 'FFN_UP_GATE', baseZ: 8, color: 0xEC4899, w: 16, h: 8,
+    desc: 'Feed-Forward Network Up-Projection. Expands dimensionality to allow the model to learn complex non-linear features.'
+  },
+  { 
+    id: 'ffn2', name: 'FFN_DOWN_PROJ', baseZ: 14, color: 0x10B981, w: 10, h: 10,
+    desc: 'Projects the expanded data back to the model dimension, summarizing the newly learned high-level features.'
+  }
 ];
+
+function toggleExplode() {
+  isExploded = !isExploded;
+  const btn = document.getElementById('explode-btn');
+  if (isExploded) {
+    btn?.classList.add('text-brand-accent', 'border-brand-accent', 'bg-brand-accent/20');
+    camAngle.d = 50;
+  } else {
+    btn?.classList.remove('text-brand-accent', 'border-brand-accent', 'bg-brand-accent/20');
+    camAngle.d = 35;
+  }
+}
+
+function updateTrainingProgress(val) {
+  trainingProgress = parseFloat(val);
+  const epochVal = document.getElementById('epoch-val');
+  if (epochVal) epochVal.textContent = `EPOCH: ${(trainingProgress * 3).toFixed(2)}`;
+}
+
+function pickMethod(id) {
+  currentMethod = METHODS.find(m => m.id === id);
+  if (!currentMethod) return;
+
+  document.querySelectorAll('#method-btns button').forEach(b => {
+    const isActive = b.dataset.id === id;
+    b.classList.toggle('active', isActive);
+    const nameEl = b.querySelector('span:last-child');
+    if (nameEl) {
+        nameEl.classList.toggle('text-brand-accent', isActive);
+        nameEl.classList.toggle('text-brand-text2', !isActive);
+    }
+  });
+
+  const titleEl = document.getElementById('overlay-title');
+  if (titleEl) {
+    titleEl.innerHTML = `${currentMethod.emoji} ${currentMethod.name}`;
+    titleEl.style.textShadow = `0 0 30px ${currentMethod.color}`;
+  }
+
+  const descEl = document.getElementById('desc-text');
+  if (descEl) descEl.textContent = currentMethod.desc;
+  
+  const insightEl = document.getElementById('insight-text');
+  if (insightEl) insightEl.textContent = currentMethod.insight;
+  
+  const formulaText = document.getElementById('formula-text');
+  if (formulaText) {
+    formulaText.textContent = currentMethod.formula;
+    formulaText.style.color = currentMethod.color;
+  }
+  
+  rebuildScene();
+}
 
 function initThree() {
   const cvs = document.getElementById('three-canvas');
@@ -223,8 +291,14 @@ function checkHover(e) {
             tooltip.style.left = `${e.clientX + 20}px`;
             tooltip.style.top = `${e.clientY + 20}px`;
             const arch = ARCH.find(a => a.baseZ === layer.baseZ);
-            document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER';
-            document.getElementById('tooltip-dim').textContent = arch ? `DIM: ${arch.w * 512}x${arch.h * 512}` : 'NODE: ACTIVE';
+            
+            document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER_SCHEMA';
+            
+            // Refined Dimension & Logic Info
+            const dimText = arch ? `DIM: ${arch.w * 512}x${arch.h * 512}` : 'TYPE: RANK_DECOMPOSED';
+            const descText = arch ? `<div class="mt-2 pt-2 border-t border-white/10 text-[10px] text-brand-text2 leading-tight max-w-[200px] normal-case font-sans italic">${arch.desc}</div>` : '';
+            
+            document.getElementById('tooltip-dim').innerHTML = `${dimText}${descText}`;
             return;
         }
     }
