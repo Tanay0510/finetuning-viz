@@ -3,7 +3,25 @@
 {% block title %}3D Explorer — llmviz.studio{% endblock %}
 
 {% block head %}
-<link rel="stylesheet" type="text/tailwindcss" href="{{ url_for('static', filename='css/explore.css') }}">
+<style type="text/tailwindcss">
+  @layer components {
+    .hud-btn {
+      @apply px-5 py-2.5 rounded-2xl border border-brand-border bg-brand-bg2/40 backdrop-blur-md flex items-center gap-3 transition-all duration-300 hover:border-brand-accent/50 hover:bg-brand-bg2/60;
+    }
+    .hud-btn.active {
+      @apply border-brand-accent bg-brand-accent/10 shadow-[0_0_20px_rgba(59,130,246,0.15)];
+    }
+    .hud-label {
+      @apply font-mono text-[10px] uppercase tracking-[0.2em] text-brand-text3 mb-2 block;
+    }
+    .terminal-box {
+      @apply bg-brand-bg2/40 backdrop-blur-xl rounded-[32px] border border-brand-border p-8 shadow-2xl relative overflow-hidden;
+    }
+    .annotation-tag {
+      @apply absolute px-3 py-1.5 bg-black/80 backdrop-blur-xl border border-brand-accent/30 rounded-lg text-[10px] font-mono text-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.2)] pointer-events-none select-none z-30 whitespace-nowrap transition-all duration-300;
+    }
+  }
+</style>
 {% endblock %}
 
 {% block content %}
