@@ -48,6 +48,18 @@
     {% block head %}{% endblock %}
 </head>
 <body class="bg-brand-bg text-brand-text font-sans antialiased">
+    <!-- Global Neural Preloader -->
+    <div id="global-loader" class="fixed inset-0 z-[200] bg-brand-bg flex flex-col items-center justify-center transition-opacity duration-700">
+        <div class="relative w-24 h-24">
+            <div class="absolute inset-0 rounded-full border-2 border-brand-accent/20"></div>
+            <div class="absolute inset-0 rounded-full border-t-2 border-brand-accent animate-spin"></div>
+            <div class="absolute inset-4 rounded-xl bg-brand-accent/10 animate-pulse flex items-center justify-center">
+                <span class="text-brand-accent text-[8px] font-mono font-bold tracking-tighter">LLMVIZ</span>
+            </div>
+        </div>
+        <div class="mt-8 font-mono text-[10px] text-brand-text3 uppercase tracking-[0.4em] animate-pulse">Initializing Neural Core...</div>
+    </div>
+
     <nav class="fixed top-0 left-0 right-0 z-[100] px-6 py-3.5 flex items-center justify-between bg-brand-bg/85 backdrop-blur-2xl border-b border-brand-border">
         <a href="/" class="text-base font-bold tracking-tight flex items-center gap-2 group">
             <span class="w-2 h-2 rounded-full bg-brand-accent shadow-[0_0_8px_theme(colors.brand.accent)] group-hover:scale-125 transition-transform"></span>

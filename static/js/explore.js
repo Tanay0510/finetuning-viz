@@ -1,7 +1,8 @@
 let currentMethod = null; 
 let scene, camera, renderer, composer, dead = false;
 let camAngle = {th: 0.6, ph: 0.2, d: 35};
-let mouse = {dn:false, lx:0, ly:0};
+let mouse = {dn:false, lx:0, ly:0, x:0, y:0};
+let raycaster = new THREE.Raycaster();
 let sceneObjects = { layers: [], extras: [], annotations: [], lasers: null };
 let isExploded = false;
 let trainingProgress = 0;
@@ -71,9 +72,16 @@ function initThree() {
   composer.addPass(renderScene);
   composer.addPass(bloomPass);
 
-  cvs.addEventListener('mousedown', e=>{mouse={dn:true,lx:e.clientX,ly:e.clientY}});
+  cvs.addEventListener('mousedown', e=>{mouse={...mouse, dn:true,lx:e.clientX,ly:e.clientY}});
   window.addEventListener('mousemove', e=>{
-    if(!mouse.dn) return;
+    const rect = cvs.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    if(!mouse.dn) {
+        checkHover(e);
+        return;
+    }
     camAngle.th-=(e.clientX-mouse.lx)*0.005;
     camAngle.ph=Math.max(-0.5,Math.min(0.8,camAngle.ph+(e.clientY-mouse.ly)*0.005));
     mouse.lx=e.clientX; mouse.ly=e.clientY;
@@ -90,6 +98,33 @@ function initThree() {
     renderer.setSize(container.clientWidth, container.clientHeight);
     composer.setSize(container.clientWidth, container.clientHeight);
   });
+}
+
+function checkHover(e) {
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(scene.children, true);
+    const tooltip = document.getElementById('hover-tooltip');
+    if (!tooltip) return;
+    
+    if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        let layer = null;
+        sceneObjects.layers.forEach(l => {
+            if (l.group === obj.parent || l.group === obj.parent?.parent) layer = l;
+        });
+
+        if (layer) {
+            tooltip.classList.remove('hidden');
+            tooltip.style.left = `${e.clientX + 20}px`;
+            tooltip.style.top = `${e.clientY + 20}px`;
+            
+            const arch = ARCH.find(a => a.baseZ === layer.baseZ);
+            document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER_NODE';
+            document.getElementById('tooltip-dim').textContent = arch ? `${arch.w * 512} x ${arch.h * 512}` : 'Rank-Decomposed';
+            return;
+        }
+    }
+    tooltip.classList.add('hidden');
 }
 
 function clearScene(){
