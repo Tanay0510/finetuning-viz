@@ -1,6 +1,7 @@
 flask>=3.0
 gunicorn>=21.2
 flask-sqlalchemy
+flask-migrate
 flask-login
 werkzeug
 psycopg2-binary
