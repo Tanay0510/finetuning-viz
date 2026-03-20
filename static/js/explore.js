@@ -129,6 +129,7 @@ function initThree() {
 
   window.addEventListener('mousemove', e=>{
     const rect = cvs.getBoundingClientRect();
+    // Normalize mouse coordinates for Three.js (-1 to +1)
     mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
 
@@ -376,14 +377,30 @@ function animate() {
 
 function checkClick(e) {
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(scene.children, true);
+    
+    // Only target objects that are part of our architecture layers
+    const targetObjects = [];
+    sceneObjects.layers.forEach(l => {
+        targetObjects.push(l.imesh);
+        targetObjects.push(l.wire);
+        l.group.traverse(child => {
+            if (child.isMesh) targetObjects.push(child);
+        });
+    });
+    
+    const intersects = raycaster.intersectObjects(targetObjects, true);
     
     if (intersects.length > 0) {
         let obj = intersects[0].object;
         let layer = null;
-        sceneObjects.layers.forEach(l => {
-            if (l.imesh === obj || l.group === obj.parent || l.group === obj.parent?.parent) layer = l;
-        });
+        
+        // Find which layer this object belongs to
+        let current = obj;
+        while (current) {
+            layer = sceneObjects.layers.find(l => l.group === current || l.imesh === current);
+            if (layer) break;
+            current = current.parent;
+        }
 
         if (layer) {
             const arch = ARCH.find(a => a.id === layer.id);
