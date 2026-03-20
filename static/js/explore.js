@@ -571,6 +571,123 @@ function updateAnnotations() {
   });
 }
 
+let currentWalkStep = -1;
+const walkthroughSteps = [
+    {
+        id: 'start',
+        title: 'TRANSFORMER_ORCHESTRATION',
+        layer: null,
+        desc: 'Welcome, Architect. You are looking at the core machinery of a Large Language Model. We will trace a single input as it travels through these neural gates.',
+        math: 'Architecture: Transformer (Decoder-Only)',
+        cam: { th: 0.6, ph: 0.2, d: 45 }
+    },
+    {
+        id: 'embed',
+        title: 'STAGE_01: EMBEDDING_LATENT',
+        layer: 'embed',
+        desc: 'The input "The quick brown fox" enters here. Each word is mapped to a unique 4096-dimensional vector. The model now "understands" the words as relative points in a massive conceptual space.',
+        math: 'TokenID(421) \rightarrow [0.12, -0.4, ... 0.88]',
+        cam: { th: 0.1, ph: 0.3, d: 18 }
+    },
+    {
+        id: 'qkv',
+        title: 'STAGE_02: CONTEXTUAL_ATTENTION',
+        layer: 'qkv',
+        desc: 'This is the most critical step. The model doesn\'t just see "Fox"; it looks back at "Quick" and "Brown" to establish the animal context. Self-attention creates the relationships that form logic.',
+        math: 'Attention = Softmax(QK^T)V',
+        cam: { th: 0.6, ph: 0.2, d: 15 }
+    },
+    {
+        id: 'ffn1',
+        title: 'STAGE_03: KNOWLEDGE_EXPANSION',
+        layer: 'ffn1',
+        desc: 'To reason, the model expands the data into a high-dimensional space (e.g., 11,000 dimensions). It applies non-linear logic (SwiGLU) to "think" about the context established in the attention layer.',
+        math: 'Expand(x) = \sigma(xW_1) \cdot xW_2',
+        cam: { th: 1.1, ph: 0.1, d: 18 }
+    },
+    {
+        id: 'ffn2',
+        title: 'STAGE_04: DIMENSIONAL_SQUEEZE',
+        layer: 'ffn2',
+        desc: 'The reasoning is complete. The model now compresses that high-dimensional thought back into the original model size, summarizing the learned context into a refined vector.',
+        math: 'FFN_{out} = Intermediate \times W_3',
+        cam: { th: 1.4, ph: 0.2, d: 18 }
+    },
+    {
+        id: 'end',
+        title: 'STAGE_05: NEXT_TOKEN_LOGITS',
+        layer: null,
+        desc: 'The refined vector is now ready. The model compares this result against its 32,000-word vocabulary and predicts the most likely next word: "JUMPS".',
+        math: 'P(y | x) = softmax(z_i)',
+        cam: { th: 1.8, ph: 0.3, d: 35 }
+    }
+];
+
+function startWalkthrough() {
+    currentWalkStep = 0;
+    document.getElementById('walkthrough-hud').classList.remove('translate-y-[200px]');
+    document.getElementById('start-walk-btn').classList.add('opacity-0', 'pointer-events-none');
+    updateWalkthroughUI();
+}
+
+function updateWalkthroughUI() {
+    const step = walkthroughSteps[currentWalkStep];
+    const hudTitle = document.getElementById('walk-stage-title');
+    if (hudTitle) hudTitle.textContent = step.title;
+
+    // Update Progress Dots
+    const progress = document.getElementById('walk-progress');
+    if (progress) {
+        progress.innerHTML = walkthroughSteps.map((_, i) => `
+            <div class="w-1.5 h-1.5 rounded-full transition-all duration-500 ${i === currentWalkStep ? 'bg-brand-accent scale-150 shadow-[0_0_8px_#00f2ff]' : 'bg-white/10'}"></div>
+        `).join('');
+    }
+
+    // Trigger Sidebar & Focus
+    if (step.layer) {
+        const arch = ARCH.find(a => a.id === step.layer);
+        const layer = sceneObjects.layers.find(l => l.id === step.layer);
+        if (arch && layer) focusLayer(arch, layer);
+    } else {
+        unfocusLayer();
+        // Manual override for special stages (start/end)
+        camAngle.th = step.cam.th;
+        camAngle.ph = step.cam.ph;
+        camAngle.d = step.cam.d;
+        
+        // Show start/end info in sidebar
+        const side = document.getElementById('side-insight');
+        if (side) side.classList.remove('translate-x-[400px]');
+        document.getElementById('side-title').textContent = step.title;
+        document.getElementById('side-desc').textContent = step.desc;
+        document.getElementById('side-math').textContent = step.math;
+        document.getElementById('side-specs').innerHTML = '';
+    }
+}
+
+function nextWalkStep() {
+    if (currentWalkStep < walkthroughSteps.length - 1) {
+        currentWalkStep++;
+        updateWalkthroughUI();
+    } else {
+        exitWalkthrough();
+    }
+}
+
+function prevWalkStep() {
+    if (currentWalkStep > 0) {
+        currentWalkStep--;
+        updateWalkthroughUI();
+    }
+}
+
+function exitWalkthrough() {
+    currentWalkStep = -1;
+    document.getElementById('walkthrough-hud').classList.add('translate-y-[200px]');
+    document.getElementById('start-walk-btn').classList.remove('opacity-0', 'pointer-events-none');
+    unfocusLayer();
+}
+
 function initExplore() {
     initThree();
     rebuildScene();
