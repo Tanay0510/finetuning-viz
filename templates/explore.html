@@ -79,6 +79,43 @@
 
       <!-- 3D Annotations Container -->
       <div id="annotations" class="absolute inset-0 pointer-events-none z-20"></div>
+      
+      <!-- Scanlines Overlay -->
+      <div class="absolute inset-0 scanlines z-30 opacity-40 mix-blend-overlay"></div>
+
+      <!-- Technical Insight Sidebar -->
+      <div id="side-insight" class="absolute top-8 bottom-8 right-8 w-80 z-[60] bg-black/80 backdrop-blur-2xl border border-white/10 rounded-[32px] translate-x-[400px] transition-transform duration-700 overflow-hidden flex flex-col shadow-2xl">
+          <div class="p-8 border-b border-white/5 bg-brand-bg3/30">
+              <div class="flex justify-between items-start mb-4">
+                  <span class="text-[9px] font-mono font-bold text-brand-accent uppercase tracking-[0.3em]">Module_Deep_Dive</span>
+                  <button onclick="unfocusLayer()" class="text-brand-text3 hover:text-white transition-colors">
+                      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+              </div>
+              <h2 id="side-title" class="text-2xl font-bold text-white tracking-tight">ATTENTION_CORE</h2>
+          </div>
+          <div class="p-8 space-y-8 flex-grow overflow-y-auto scrollbar-hide">
+              <div>
+                  <div class="hud-label !mb-3">Abstract</div>
+                  <p id="side-desc" class="text-brand-text2 text-sm leading-relaxed italic"></p>
+              </div>
+              <div id="side-math-box" class="p-5 rounded-2xl bg-black/40 border border-white/5">
+                  <div class="text-[8px] font-mono text-brand-accent uppercase mb-3">Mathematical_Logic</div>
+                  <code id="side-math" class="text-xs text-white block whitespace-normal"></code>
+              </div>
+              <div class="space-y-4">
+                  <div class="hud-label">Technical Specs</div>
+                  <div class="grid grid-cols-2 gap-3" id="side-specs">
+                      <!-- Specs injected here -->
+                  </div>
+              </div>
+          </div>
+          <div class="p-8 border-t border-white/5 bg-black/20">
+              <button onclick="unfocusLayer()" class="w-full btn-ghost !py-3 !text-[10px] uppercase tracking-widest justify-center">
+                  ← Return to Model
+              </button>
+          </div>
+      </div>
 
       <!-- Hover Tooltip -->
       <div id="hover-tooltip" class="absolute hidden z-50 bg-black/90 backdrop-blur-xl border border-brand-accent/40 px-4 py-2.5 rounded-xl shadow-2xl pointer-events-none transition-opacity duration-300">
