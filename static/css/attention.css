@@ -1,0 +1,8 @@
+@layer components {
+  .token-node {
+    @apply absolute px-3 py-1.5 bg-brand-bg2/80 backdrop-blur-md border border-brand-border rounded-xl text-[11px] font-mono font-bold text-brand-text cursor-pointer transition-all duration-300 hover:border-brand-accent hover:scale-110 select-none;
+  }
+  .token-node.active {
+    @apply border-brand-accent bg-brand-accent/20 text-white shadow-[0_0_20px_rgba(59,130,246,0.4)];
+  }
+}

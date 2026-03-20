@@ -90,6 +90,26 @@ function updateUI(totalVRAM, mem, params, gpu) {
     document.getElementById('seg-optim').style.width = `${(mem.optimGB / maxVal) * 100}%`;
     document.getElementById('seg-act').style.width = `${(mem.actGB / maxVal) * 100}%`;
 
+    // Populate Breakdown
+    const breakdown = document.getElementById('vram-breakdown');
+    if (breakdown) {
+        const items = [
+            { label: 'Frozen Weights', val: mem.weightsGB, col: '#3B82F6' },
+            { label: 'Gradients', val: mem.gradsGB, col: '#8B5CF6' },
+            { label: 'Optimizer States', val: mem.optimGB, col: '#EC4899' },
+            { label: 'Activations', val: mem.actGB, col: '#F59E0B' }
+        ];
+        breakdown.innerHTML = items.map(i => `
+            <div class="flex justify-between items-center font-mono text-[10px]">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full" style="background: ${i.col}"></span>
+                    <span class="text-brand-text2 uppercase">${i.label}</span>
+                </div>
+                <span class="text-white font-bold">${i.val.toFixed(2)} GB</span>
+            </div>
+        `).join('');
+    }
+
     const resVRAM = document.getElementById('res-vram');
     resVRAM.textContent = totalVRAM.toFixed(1) + ' GB';
     resVRAM.style.color = fits ? (tight ? '#f59e0b' : '#3B82F6') : '#ef4444';
@@ -139,6 +159,27 @@ function downloadRecipe() {
   a.href = URL.createObjectURL(blob);
   a.download = `training_recipe.yaml`;
   a.click();
+}
+
+async function saveRecipe() {
+    const name = prompt("Enter a name for this recipe:", "My Llama-2-7b LoRA");
+    if (!name) return;
+
+    try {
+        const response = await fetch('/api/recipes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: name,
+                config: state
+            })
+        });
+        const result = await response.json();
+        alert("Recipe saved successfully!");
+    } catch (err) {
+        console.error(err);
+        alert("Failed to save recipe.");
+    }
 }
 
 function initPlayground() {
