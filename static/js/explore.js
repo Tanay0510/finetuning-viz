@@ -505,7 +505,9 @@ function createAnnotation(text, obj3D) {
 
 function checkHover(e) {
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(scene.children, true);
+    const meshes = [];
+    scene.traverse(o => { if (o.isMesh || o.isInstancedMesh) meshes.push(o); });
+    const intersects = raycaster.intersectObjects(meshes, true);
     const tooltip = document.getElementById('hover-tooltip');
     if (!tooltip) return;
     
