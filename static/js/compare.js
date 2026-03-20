@@ -79,13 +79,21 @@ function rebuildViewport(id) {
     const group = new THREE.Group();
 
     for(let z=0; z<5; z++) {
-        const box = new THREE.Mesh(new THREE.BoxGeometry(8, 8, 0.5), new THREE.MeshBasicMaterial({color: mc, wireframe: true, transparent: true, opacity: 0.1}));
+        const box = new THREE.Mesh(new THREE.BoxGeometry(8, 8, 0.5), new THREE.MeshBasicMaterial({color: mc, wireframe: true, transparent: true, opacity: 0.05}));
         box.position.z = (z-2) * 6;
         group.add(box);
         
         if (isFull) {
             const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-            const mat = new THREE.MeshStandardMaterial({color: mc, emissive: mc, emissiveIntensity: 1});
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0x1a1e2e,
+                metalness: 0.9,
+                roughness: 0.2,
+                emissive: mc,
+                emissiveIntensity: 0.5,
+                transparent: true,
+                opacity: 0.8
+            });
             const imesh = new THREE.InstancedMesh(geo, mat, 16);
             const dummy = new THREE.Object3D();
             for(let i=0; i<16; i++) {
@@ -98,8 +106,14 @@ function rebuildViewport(id) {
     }
 
     if (['lora', 'qlora', 'dora'].includes(engine.methodId)) {
-        const adapterGeo = new THREE.BoxGeometry(2, 8, 0.5);
-        const adapterMat = new THREE.MeshStandardMaterial({color: mc, emissive: mc, emissiveIntensity: 2});
+        const adapterGeo = new THREE.BoxGeometry(2, 8, 0.1);
+        const adapterMat = new THREE.MeshStandardMaterial({
+            color: mc,
+            emissive: mc,
+            emissiveIntensity: 2,
+            metalness: 1,
+            roughness: 0
+        });
         for(let z=0; z<5; z++) {
             const adapter = new THREE.Mesh(adapterGeo, adapterMat);
             adapter.position.set(5, 0, (z-2)*6);

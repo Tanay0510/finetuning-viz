@@ -1,94 +1,90 @@
+/**
+ * Pro-Grade 3D Explorer - llmviz.studio
+ * High-fidelity neural architecture visualization.
+ */
+
 let currentMethod = null; 
 let scene, camera, renderer, composer, dead = false;
 let camAngle = {th: 0.6, ph: 0.2, d: 35};
 let mouse = {dn:false, lx:0, ly:0, x:0, y:0};
 let raycaster = new THREE.Raycaster();
-let sceneObjects = { layers: [], extras: [], annotations: [], lasers: null };
+let sceneObjects = { layers: [], extras: [], annotations: [], dataParticles: null };
 let isExploded = false;
 let trainingProgress = 0;
 
+// High-End Industrial Palette
+const THEME = {
+    base: 0x0a0c14,
+    glass: 0x1a1e2e,
+    wireframe: 0x3b82f6,
+    accent: 0x60a5fa,
+    grid: 0x161b22,
+    particle: 0x3b82f6
+};
+
 const ARCH = [
-  { id: 'embed', name: 'Embedding', baseZ: -10, color: 0x475569, w: 8, h: 8 },
-  { id: 'qkv', name: 'Q, K, V Matrices', baseZ: -4, color: 0x3B82F6, w: 12, h: 12 },
-  { id: 'proj', name: 'Output Proj', baseZ: 2, color: 0x8B5CF6, w: 10, h: 10 },
-  { id: 'ffn1', name: 'FFN Gate/Up', baseZ: 8, color: 0xEC4899, w: 16, h: 8 },
-  { id: 'ffn2', name: 'FFN Down', baseZ: 14, color: 0x10B981, w: 10, h: 10 }
+  { id: 'embed', name: 'EMBEDDING_VECT', baseZ: -10, color: 0x475569, w: 8, h: 8 },
+  { id: 'qkv', name: 'ATTN_QKV_HEADS', baseZ: -4, color: 0x3B82F6, w: 12, h: 12 },
+  { id: 'proj', name: 'DENSE_PROJECTION', baseZ: 2, color: 0x8B5CF6, w: 10, h: 10 },
+  { id: 'ffn1', name: 'FFN_UP_GATE', baseZ: 8, color: 0xEC4899, w: 16, h: 8 },
+  { id: 'ffn2', name: 'FFN_DOWN_PROJ', baseZ: 14, color: 0x10B981, w: 10, h: 10 }
 ];
-
-function toggleExplode() {
-  isExploded = !isExploded;
-  const btn = document.getElementById('explode-btn');
-  if (isExploded) {
-    btn.classList.add('text-brand-accent', 'border-brand-accent', 'bg-brand-accent/20');
-    camAngle.d = 50;
-  } else {
-    btn.classList.remove('text-brand-accent', 'border-brand-accent', 'bg-brand-accent/20');
-    camAngle.d = 35;
-  }
-}
-
-function updateTrainingProgress(val) {
-  trainingProgress = parseFloat(val);
-  document.getElementById('epoch-val').textContent = `EPOCH: ${(trainingProgress * 3).toFixed(2)}`;
-}
-
-function pickMethod(id) {
-  currentMethod = METHODS.find(m => m.id === id);
-  document.querySelectorAll('#method-btns button').forEach(b => {
-    const isActive = b.dataset.id === id;
-    b.className = `hud-btn group ${isActive ? 'active' : ''}`;
-    const nameEl = b.querySelector('span:last-child');
-    if (nameEl) nameEl.className = `text-xs font-bold tracking-tight transition-colors ${isActive ? 'text-brand-accent' : 'text-brand-text2'}`;
-  });
-
-  const titleEl = document.getElementById('overlay-title');
-  titleEl.innerHTML = `${currentMethod.emoji} ${currentMethod.name}`;
-  titleEl.style.textShadow = `0 0 30px ${currentMethod.color}`;
-
-  document.getElementById('desc-text').textContent = currentMethod.desc;
-  document.getElementById('insight-text').textContent = currentMethod.insight;
-  const formulaText = document.getElementById('formula-text');
-  formulaText.textContent = currentMethod.formula;
-  formulaText.style.color = currentMethod.color;
-  rebuildScene();
-}
 
 function initThree() {
   const cvs = document.getElementById('three-canvas');
   if (!cvs) return;
   const container = cvs.parentElement;
-  scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x020408, 0.015);
-  camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
-  renderer = new THREE.WebGLRenderer({canvas:cvs, antialias:false, powerPreference: "high-performance"});
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(window.devicePixelRatio > 1 ? 1.5 : 1);
-  renderer.toneMapping = THREE.ReinhardToneMapping;
-  renderer.toneMappingExposure = 1.2;
   
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(THEME.base);
+  scene.fog = new THREE.FogExp2(THEME.base, 0.02);
+
+  camera = new THREE.PerspectiveCamera(40, container.clientWidth/container.clientHeight, 0.1, 1000);
+  
+  renderer = new THREE.WebGLRenderer({canvas:cvs, antialias:true, powerPreference: "high-performance"});
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  
+  // High-End Post Processing
   const renderScene = new THREE.RenderPass(scene, camera);
-  const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 2.0, 0.5, 0.1);
+  const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 1.2, 0.4, 0.85);
   composer = new THREE.EffectComposer(renderer);
   composer.addPass(renderScene);
   composer.addPass(bloomPass);
 
+  // Studio Lighting
+  const ambient = new THREE.AmbientLight(0xffffff, 0.2);
+  scene.add(ambient);
+
+  const spot = new THREE.SpotLight(0xffffff, 100);
+  spot.position.set(20, 40, 20);
+  spot.angle = 0.3;
+  spot.penumbra = 1;
+  scene.add(spot);
+
+  const rimLight = new THREE.DirectionalLight(0x3b82f6, 2);
+  rimLight.position.set(-10, -10, -10);
+  scene.add(rimLight);
+
+  // Technical Grid
+  const grid = new THREE.GridHelper(200, 80, 0x1e293b, 0x0f172a);
+  grid.position.y = -10;
+  scene.add(grid);
+
+  // Interaction
   cvs.addEventListener('mousedown', e=>{mouse={...mouse, dn:true,lx:e.clientX,ly:e.clientY}});
   window.addEventListener('mousemove', e=>{
     const rect = cvs.getBoundingClientRect();
     mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-    if(!mouse.dn) {
-        checkHover(e);
-        return;
-    }
+    if(!mouse.dn) { checkHover(e); return; }
     camAngle.th-=(e.clientX-mouse.lx)*0.005;
     camAngle.ph=Math.max(-0.5,Math.min(0.8,camAngle.ph+(e.clientY-mouse.ly)*0.005));
     mouse.lx=e.clientX; mouse.ly=e.clientY;
   });
   window.addEventListener('mouseup', ()=>{mouse.dn=false});
   cvs.addEventListener('wheel', e=>{
-    camAngle.d=Math.max(20,Math.min(80,camAngle.d+e.deltaY*0.05));
+    camAngle.d=Math.max(15,Math.min(100,camAngle.d+e.deltaY*0.05));
     e.preventDefault();
   },{passive:false});
 
@@ -98,6 +94,171 @@ function initThree() {
     renderer.setSize(container.clientWidth, container.clientHeight);
     composer.setSize(container.clientWidth, container.clientHeight);
   });
+}
+
+function createTensorLayer(def, methodColor) {
+    const group = new THREE.Group();
+    
+    // Pro Material: Frosted Glass / Metallic mix
+    const mat = new THREE.MeshStandardMaterial({
+        color: 0x1a1e2e,
+        metalness: 0.9,
+        roughness: 0.2,
+        transparent: true,
+        opacity: 0.4,
+        emissive: methodColor,
+        emissiveIntensity: 0
+    });
+
+    const geo = new THREE.BoxGeometry(def.w * 0.5, def.h * 0.5, 0.4);
+    const mesh = new THREE.Mesh(geo, mat);
+    group.add(mesh);
+
+    // Wireframe Overlay (Technical Detail)
+    const wireGeo = new THREE.EdgesGeometry(geo);
+    const wireMat = new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.2 });
+    const wire = new THREE.LineSegments(wireGeo, wireMat);
+    group.add(wire);
+
+    // Subtle Internal Nodes (Instanced)
+    const nodeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const nodeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5 });
+    const count = 16;
+    const imesh = new THREE.InstancedMesh(nodeGeo, nodeMat, count);
+    const dummy = new THREE.Object3D();
+    for(let i=0; i<count; i++) {
+        dummy.position.set((Math.random()-0.5)*def.w*0.4, (Math.random()-0.5)*def.h*0.4, 0);
+        dummy.updateMatrix();
+        imesh.setMatrixAt(i, dummy.matrix);
+    }
+    group.add(imesh);
+
+    return { group, mesh, mat, wire };
+}
+
+function rebuildScene() {
+    if (!scene) return;
+    // Clear
+    while(scene.children.length > 4) { // Keep lights/grid
+        const o = scene.children[4];
+        if(o.geometry) o.geometry.dispose();
+        scene.remove(o);
+    }
+    document.getElementById('annotations').innerHTML = '';
+    sceneObjects = { layers: [], extras: [], annotations: [], dataParticles: null };
+
+    const mc = new THREE.Color(currentMethod.color);
+
+    ARCH.forEach(def => {
+        const isEmissive = currentMethod.id === 'full' || (currentMethod.id === 'prefix' && def.id === 'qkv');
+        const layer = createTensorLayer(def, isEmissive ? mc : 0x000000);
+        layer.group.position.z = def.baseZ;
+        scene.add(layer.group);
+        
+        const anchor = new THREE.Object3D();
+        anchor.position.set(0, (def.h * 0.25) + 1.5, 0);
+        layer.group.add(anchor);
+        createAnnotation(def.name, anchor);
+        
+        sceneObjects.layers.push({ ...layer, baseZ: def.baseZ, isEmissive });
+    });
+
+    // High-End Adapter Visualization
+    if (['lora', 'qlora', 'dora'].includes(currentMethod.id)) {
+        const qkv = sceneObjects.layers.find(l => l.baseZ === -4);
+        const loraGroup = new THREE.Group();
+        
+        // Matrix A & B as thin sleek slabs
+        const matA = new THREE.Mesh(new THREE.BoxGeometry(2, 6, 0.1), new THREE.MeshStandardMaterial({color: mc, emissive: mc, emissiveIntensity: 2}));
+        matA.position.set(4, 0, 0.2);
+        
+        const matB = new THREE.Mesh(new THREE.BoxGeometry(0.1, 6, 2), new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1}));
+        matB.position.set(4.5, 0, 0);
+        
+        loraGroup.add(matA);
+        loraGroup.add(matB);
+        qkv.group.add(loraGroup);
+        
+        const loraAnchor = new THREE.Object3D();
+        loraAnchor.position.set(4.5, 4, 0);
+        loraGroup.add(loraAnchor);
+        createAnnotation('LORA_ADAPTER_CORE', loraAnchor);
+    }
+
+    // Pro Particle Data Flow
+    initDataParticles();
+}
+
+function initDataParticles() {
+    const count = 2000;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count * 3);
+    const vel = new Float32Array(count);
+    
+    for(let i=0; i<count; i++) {
+        pos[i*3] = (Math.random()-0.5) * 10;
+        pos[i*3+1] = (Math.random()-0.5) * 10;
+        pos[i*3+2] = -20 + Math.random() * 40;
+        vel[i] = 0.1 + Math.random() * 0.2;
+    }
+    
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    const mat = new THREE.PointsMaterial({
+        color: 0x60a5fa,
+        size: 0.05,
+        transparent: true,
+        opacity: 0.6,
+        blending: THREE.AdditiveBlending
+    });
+    
+    const points = new THREE.Points(geo, mat);
+    scene.add(points);
+    sceneObjects.dataParticles = { points, pos, vel };
+}
+
+function animate() {
+    if(dead) return;
+    requestAnimationFrame(animate);
+    const t = performance.now() * 0.001;
+
+    if(!mouse.dn) camAngle.th += 0.002;
+    camera.position.x = Math.sin(camAngle.th) * Math.cos(camAngle.ph) * camAngle.d;
+    camera.position.y = Math.sin(camAngle.ph) * camAngle.d + 2;
+    camera.position.z = Math.cos(camAngle.th) * Math.cos(camAngle.ph) * camAngle.d;
+    camera.lookAt(0, 0, 0);
+
+    // Smoother Explode Transition
+    const explodeMult = isExploded ? 3.0 : 1.0;
+    sceneObjects.layers.forEach((layer, i) => {
+        layer.group.position.z += (layer.baseZ * explodeMult - layer.group.position.z) * 0.05;
+        if (layer.isEmissive) {
+            const pulse = 0.5 + Math.sin(t * 3 + i) * 0.5;
+            layer.mat.emissiveIntensity = pulse * (1 + trainingProgress * 2);
+            layer.wire.material.opacity = 0.2 + pulse * 0.5;
+        }
+    });
+
+    // Pro Particle Animation
+    if (sceneObjects.dataParticles) {
+        const {pos, vel} = sceneObjects.dataParticles;
+        for(let i=0; i<pos.length/3; i++) {
+            pos[i*3+2] += vel[i] * (1 + trainingProgress * 5);
+            if(pos[i*3+2] > 20) pos[i*3+2] = -20;
+        }
+        sceneObjects.dataParticles.points.geometry.attributes.position.needsUpdate = true;
+    }
+
+    updateAnnotations();
+    composer.render();
+}
+
+// Reuse existing annotation/hover logic but update styling
+function createAnnotation(text, obj3D) {
+  const el = document.createElement('div');
+  el.className = 'annotation-tag';
+  el.innerHTML = `<span class="text-brand-accent opacity-50 mr-2">⌖</span> ${text}`;
+  document.getElementById('annotations')?.appendChild(el);
+  sceneObjects.annotations.push({ el, obj: obj3D });
 }
 
 function checkHover(e) {
@@ -117,92 +278,13 @@ function checkHover(e) {
             tooltip.classList.remove('hidden');
             tooltip.style.left = `${e.clientX + 20}px`;
             tooltip.style.top = `${e.clientY + 20}px`;
-            
             const arch = ARCH.find(a => a.baseZ === layer.baseZ);
-            document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER_NODE';
-            document.getElementById('tooltip-dim').textContent = arch ? `${arch.w * 512} x ${arch.h * 512}` : 'Rank-Decomposed';
+            document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER_SCHEMA';
+            document.getElementById('tooltip-dim').textContent = arch ? `DIM: ${arch.w * 512}x${arch.h * 512}` : 'TYPE: RANK_DECOMPOSED';
             return;
         }
     }
     tooltip.classList.add('hidden');
-}
-
-function clearScene(){
-  while(scene.children.length>0){
-    const o = scene.children[0];
-    if(o.geometry) o.geometry.dispose();
-    if(o.material) {
-        if(Array.isArray(o.material)) o.material.forEach(m=>m.dispose());
-        else o.material.dispose();
-    }
-    scene.remove(o);
-  }
-  const annotationsContainer = document.getElementById('annotations');
-  if (annotationsContainer) annotationsContainer.innerHTML = '';
-  sceneObjects = { layers: [], extras: [], annotations: [], lasers: null };
-}
-
-function createAnnotation(text, obj3D) {
-  const el = document.createElement('div');
-  el.className = 'annotation-tag';
-  el.innerHTML = `<span class="opacity-50 mr-1">///</span> ${text}`;
-  const annotationsContainer = document.getElementById('annotations');
-  if (annotationsContainer) annotationsContainer.appendChild(el);
-  sceneObjects.annotations.push({ el, obj: obj3D });
-}
-
-function createTensorMatrix(w, h, color, isEmissive) {
-  const group = new THREE.Group();
-  const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-  const mat = new THREE.MeshStandardMaterial({
-    color: color, emissive: color, emissiveIntensity: isEmissive ? 1.5 : 0.05,
-    metalness: 0.9, roughness: 0.1, transparent: true, opacity: isEmissive ? 0.9 : 0.3
-  });
-  const imesh = new THREE.InstancedMesh(geo, mat, w * h);
-  let idx = 0; const dummy = new THREE.Object3D();
-  for(let x=0; x<w; x++){
-    for(let y=0; y<h; y++){
-      dummy.position.set((x - w/2)*0.5, (y - h/2)*0.5, 0);
-      dummy.updateMatrix(); imesh.setMatrixAt(idx++, dummy.matrix);
-    }
-  }
-  group.add(imesh);
-  return { group, imesh, mat };
-}
-
-function rebuildScene(){
-  clearScene();
-  const mc = new THREE.Color(currentMethod.color);
-  scene.add(new THREE.AmbientLight(0x0c1018, 2.0));
-  const dl = new THREE.DirectionalLight(0xffffff, 1.0); dl.position.set(10, 20, 10); scene.add(dl);
-  const gridHelper = new THREE.GridHelper(200, 100, 0x1A2030, 0x06080F); gridHelper.position.y = -8; scene.add(gridHelper);
-
-  ARCH.forEach((layerDef) => {
-    const isLayerEmissive = currentMethod.id === 'full' || (currentMethod.id === 'prefix' && layerDef.id === 'qkv');
-    const { group, mat } = createTensorMatrix(layerDef.w, layerDef.h, isLayerEmissive ? mc : layerDef.color, isLayerEmissive);
-    group.position.z = layerDef.baseZ; scene.add(group);
-    const anchor = new THREE.Object3D(); anchor.position.set(0, (layerDef.h/2 * 0.5) + 1, 0); group.add(anchor);
-    createAnnotation(layerDef.name, anchor);
-    sceneObjects.layers.push({ group, baseZ: layerDef.baseZ, mat, isEmissive: isLayerEmissive });
-  });
-
-  if (['lora', 'qlora', 'dora'].includes(currentMethod.id)) {
-    const qkvLayer = sceneObjects.layers.find(l => l.baseZ === -4);
-    const loraGroup = new THREE.Group();
-    const { group: matA } = createTensorMatrix(8, 2, mc, true); matA.position.set(4, 0, 0.5);
-    const { group: matB } = createTensorMatrix(2, 8, new THREE.Color(currentMethod.accent), true); matB.position.set(4, 0, -0.5);
-    loraGroup.add(matA); loraGroup.add(matB);
-    qkvLayer.group.add(loraGroup);
-    const loraAnchor = new THREE.Object3D(); loraAnchor.position.set(4, 2.5, 0); loraGroup.add(loraAnchor);
-    createAnnotation(`LoRA Adapter`, loraAnchor);
-  }
-
-  const laserGeo = new THREE.BoxGeometry(0.05, 0.05, 2.0);
-  const laserMat = new THREE.MeshBasicMaterial({color: 0xffffff, transparent: true, opacity: 0.9});
-  const lasers = new THREE.InstancedMesh(laserGeo, laserMat, 100);
-  const dummy = new THREE.Object3D(); const laserData = [];
-  for(let i=0; i<100; i++) laserData.push({ x:(Math.random()-0.5)*8, y:(Math.random()-0.5)*8, z:-15+Math.random()*30, speed:0.2+Math.random()*0.3 });
-  scene.add(lasers); sceneObjects.lasers = { mesh: lasers, data: laserData, dummy };
 }
 
 function updateAnnotations() {
@@ -216,34 +298,6 @@ function updateAnnotations() {
       a.el.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
     }
   });
-}
-
-function animate(){
-  if(dead) return; requestAnimationFrame(animate);
-  const t = performance.now()/1000;
-  if(!mouse.dn) camAngle.th += 0.002;
-  camera.position.x = Math.sin(camAngle.th)*Math.cos(camAngle.ph)*camAngle.d;
-  camera.position.y = Math.sin(camAngle.ph)*camAngle.d + 2;
-  camera.position.z = Math.cos(camAngle.th)*Math.cos(camAngle.ph)*camAngle.d;
-  camera.lookAt(0,0,0);
-
-  const explodeMult = isExploded ? 3.0 : 1.0;
-  sceneObjects.layers.forEach((layer, i) => {
-      layer.group.position.z += (layer.baseZ * explodeMult - layer.group.position.z) * 0.1;
-      if (layer.isEmissive) layer.mat.emissiveIntensity = 1.0 + Math.sin(t * (5 + trainingProgress * 15) + i) * (0.5 + trainingProgress);
-  });
-
-  if (sceneObjects.lasers) {
-      const {mesh, data, dummy} = sceneObjects.lasers;
-      for(let i=0; i<data.length; i++) {
-          data[i].z += data[i].speed * (1 + trainingProgress * 4);
-          if (data[i].z > 15) data[i].z = -15;
-          dummy.position.set(data[i].x, data[i].y, data[i].z);
-          dummy.updateMatrix(); mesh.setMatrixAt(i, dummy.matrix);
-      }
-      mesh.instanceMatrix.needsUpdate = true;
-  }
-  updateAnnotations(); composer.render();
 }
 
 function initExplore() {
