@@ -16,32 +16,45 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
     <script>
         tailwind.config = {
-            darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
                         brand: {
-                            bg: '#06080F', bg2: '#0C1018', bg3: '#121824',
-                            text: '#D8DEE9', text2: '#8892A8', text3: '#4A5468',
-                            border: '#1A2030', border2: '#252E40',
-                            accent: '#3B82F6', accent2: '#60A5FA',
+                            bg: '#05070a',      /* Deep Space Black */
+                            bg2: '#0a0d14',     /* Slate Grey-Black */
+                            bg3: '#111622',     /* Control Surface Navy */
+                            accent: '#00f2ff',  /* High-Vis Cyan */
+                            accent2: '#7000ff', /* Deep Violet */
+                            text: '#f0f4f8',    /* Off-White */
+                            text2: '#94a3b8',   /* Muted Slate */
+                            text3: '#475569',   /* Dark Slate */
+                            border: '#1e293b',  /* Thin Engineering Border */
+                            border2: '#334155'
                         }
                     },
                     fontFamily: {
                         sans: ['Instrument Sans', 'sans-serif'],
-                        mono: ['JetBrains Mono', 'monospace'],
+                        mono: ['JetBrains Mono', 'monospace']
                     }
                 }
             }
         }
     </script>
     <style type="text/tailwindcss">
-        @layer components {
-            .btn-primary { @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-brand-accent text-white transition-all shadow-[0_0_20px_rgba(59,130,246,0.2)] hover:bg-blue-600 hover:shadow-[0_0_30px_rgba(59,130,246,0.3)]; }
-            .btn-ghost { @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-transparent text-brand-text2 border border-brand-border2 transition-all hover:text-brand-text hover:border-brand-text3; }
-            .fade-up { animation: fadeUp 0.6s ease-out both; }
+        @layer base {
+            body { @apply bg-brand-bg text-brand-text selection:bg-brand-accent/30; }
         }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @layer components {
+            .btn-primary { @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold bg-brand-accent text-brand-bg transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(0,242,255,0.2)]; }
+            .btn-ghost { @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl text-xs font-bold bg-white/5 text-brand-text2 border border-brand-border transition-all hover:bg-white/10 hover:text-brand-text; }
+            .rack-panel { @apply bg-brand-bg2/40 backdrop-blur-xl rounded-[24px] border border-brand-border p-8 shadow-2xl relative overflow-hidden transition-all duration-500 hover:border-brand-accent/20; }
+            .glass-card { @apply bg-brand-bg2/60 backdrop-blur-md border border-brand-border rounded-[24px] transition-all; }
+            .fade-up { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+            .nav-link { @apply px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all duration-300; }
+            .nav-link-active { @apply text-brand-accent bg-brand-accent/10 border border-brand-accent/20 shadow-[0_0_15px_rgba(0,242,255,0.1)]; }
+            .nav-link-inactive { @apply text-brand-text3 hover:text-brand-text2 hover:bg-white/5; }
+        }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     </style>
     <script src="{{ url_for('static', filename='js/core.js') }}"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -61,32 +74,27 @@
     </div>
 
     <nav class="fixed top-0 left-0 right-0 z-[100] px-6 py-3.5 flex items-center justify-between bg-brand-bg/85 backdrop-blur-2xl border-b border-brand-border">
-        <a href="/" class="text-base font-bold tracking-tight flex items-center gap-2 group">
-            <span class="w-2 h-2 rounded-full bg-brand-accent shadow-[0_0_8px_theme(colors.brand.accent)] group-hover:scale-125 transition-transform"></span>
+        <a href="/" class="text-sm font-bold tracking-tight flex items-center gap-2 group">
+            <span class="w-2 h-2 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(0,242,255,0.5)] group-hover:scale-125 transition-transform"></span>
             llmviz.studio
         </a>
         <div class="flex items-center gap-2">
             {% if current_user.is_authenticated %}
-                <div class="flex items-center gap-1 bg-brand-bg2/50 p-1 rounded-xl border border-brand-border">
-                    <a href="/explore" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'explore' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Explorer</a>
-                    <a href="/playground" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'playground' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Playground</a>
-                    <a href="/zoo" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'zoo' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Zoo</a>
-                    <a href="/profile" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'profile' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Library</a>
-                    <a href="/guide"
- class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'guide' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Guide</a>
-                    <a href="/data" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'data' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Data</a>
-                    <a href="/compare" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'compare' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Compare</a>
-                    <a href="/attention" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'attention' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Attention</a>
-                    <a href="/quantize" class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'quantize' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Quantize</a>
-                    <a href="/learn/lora"
- class="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-300 {{ 'text-white bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.4)]' if active_page == 'learn' else 'text-brand-text2 hover:text-brand-text hover:bg-brand-bg3' }}">Learn</a>
+                <div class="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-brand-border">
+                    <a href="/explore" class="nav-link {{ 'nav-link-active' if active_page == 'explore' else 'nav-link-inactive' }}">Explorer</a>
+                    <a href="/playground" class="nav-link {{ 'nav-link-active' if active_page == 'playground' else 'nav-link-inactive' }}">Playground</a>
+                    <a href="/zoo" class="nav-link {{ 'nav-link-active' if active_page == 'zoo' else 'nav-link-inactive' }}">Zoo</a>
+                    <a href="/profile" class="nav-link {{ 'nav-link-active' if active_page == 'profile' else 'nav-link-inactive' }}">Library</a>
+                    <a href="/data" class="nav-link {{ 'nav-link-active' if active_page == 'data' else 'nav-link-inactive' }}">Data</a>
+                    <a href="/compare" class="nav-link {{ 'nav-link-active' if active_page == 'compare' else 'nav-link-inactive' }}">Compare</a>
+                    <a href="/attention" class="nav-link {{ 'nav-link-active' if active_page == 'attention' else 'nav-link-inactive' }}">Attention</a>
+                    <a href="/quantize" class="nav-link {{ 'nav-link-active' if active_page == 'quantize' else 'nav-link-inactive' }}">Quantize</a>
                 </div>
                 <div class="w-px h-6 bg-brand-border mx-2"></div>
-                <a href="/profile" class="text-xs font-bold text-white hover:text-brand-accent transition-colors mr-2">{{ current_user.name }}</a>
-                <a href="/logout"
- class="px-4 py-2 rounded-lg text-xs font-semibold text-red-400 hover:bg-red-500/10 transition-all">Logout</a>
+                <a href="/profile" class="text-[10px] font-bold text-white hover:text-brand-accent transition-colors mr-2 uppercase tracking-widest">{{ current_user.name }}</a>
+                <a href="/logout" class="px-4 py-2 rounded-lg text-[10px] font-bold text-red-400 hover:bg-red-500/10 transition-all uppercase tracking-widest">Logout</a>
             {% else %}
-                 <a href="/login" class="btn-primary !text-xs !px-5 !py-2">Sign In</a>
+                 <a href="/login" class="btn-primary !py-2 !px-5">Sign In</a>
             {% endif %}
         </div>
     </nav>

@@ -6,10 +6,16 @@
 <style type="text/tailwindcss">
   @layer components {
     .compare-card {
-      @apply bg-brand-bg2/40 backdrop-blur-xl rounded-[32px] border border-brand-border overflow-hidden shadow-2xl relative flex flex-col;
+      @apply bg-brand-bg2/40 backdrop-blur-xl rounded-[32px] border border-brand-border overflow-hidden shadow-2xl relative flex flex-col transition-all hover:border-brand-accent/20;
     }
     .method-select {
-      @apply bg-brand-bg border border-brand-border rounded-xl px-4 py-2 text-xs font-bold text-brand-text appearance-none outline-none focus:border-brand-accent transition-all cursor-pointer;
+      @apply bg-brand-bg border border-brand-border rounded-xl px-4 py-2 text-[10px] font-bold text-brand-text appearance-none outline-none focus:border-brand-accent transition-all cursor-pointer uppercase tracking-widest;
+    }
+    .model-badge {
+      @apply px-2 py-1 rounded bg-black/40 border border-brand-border text-[8px] font-bold uppercase tracking-widest hover:border-brand-accent transition-all;
+    }
+    .model-badge.active {
+      @apply border-brand-accent text-brand-accent bg-brand-accent/5 shadow-[0_0_10px_rgba(0,242,255,0.1)];
     }
   }
 </style>
@@ -52,7 +58,7 @@
         </div>
         <div class="flex gap-2">
             {% for ms in models %}
-            <button onclick="pickModel('a', '{{ ms.id }}')" id="model-a-{{ ms.id }}" class="px-2 py-1 rounded bg-black/40 border border-brand-border text-[8px] font-bold uppercase tracking-widest hover:border-brand-accent transition-all {% if ms.id == '7b' %}border-brand-accent text-brand-accent{% endif %}">{{ ms.name }}</button>
+            <button onclick="pickModel('a', '{{ ms.id }}')" id="model-a-{{ ms.id }}" class="model-badge {% if ms.id == '7b' %}active{% endif %}">{{ ms.name }}</button>
             {% endfor %}
         </div>
       </div>
@@ -77,7 +83,7 @@
         </div>
         <div class="flex gap-2">
             {% for ms in models %}
-            <button onclick="pickModel('b', '{{ ms.id }}')" id="model-b-{{ ms.id }}" class="px-2 py-1 rounded bg-black/40 border border-brand-border text-[8px] font-bold uppercase tracking-widest hover:border-brand-accent transition-all {% if ms.id == '7b' %}border-brand-accent text-brand-accent{% endif %}">{{ ms.name }}</button>
+            <button onclick="pickModel('b', '{{ ms.id }}')" id="model-b-{{ ms.id }}" class="model-badge {% if ms.id == '7b' %}active{% endif %}">{{ ms.name }}</button>
             {% endfor %}
         </div>
       </div>

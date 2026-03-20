@@ -5,9 +5,6 @@
 {% block head %}
 <style type="text/tailwindcss">
   @layer components {
-    .rack-panel { 
-      @apply bg-brand-bg2/60 backdrop-blur-xl rounded-[32px] border border-brand-border p-8 shadow-2xl relative overflow-hidden transition-all duration-500 hover:border-brand-accent/30; 
-    }
     .rack-label { 
       @apply font-mono text-[10px] uppercase tracking-[0.3em] text-brand-text3 mb-6 block font-bold; 
     }
@@ -15,7 +12,7 @@
       @apply w-full h-1.5 bg-brand-bg rounded-full appearance-none outline-none border border-brand-border2 accent-brand-accent; 
     }
     .studio-slider::-webkit-slider-thumb { 
-      @apply appearance-none w-4 h-4 rounded-full bg-brand-accent cursor-pointer shadow-[0_0_15px_rgba(59,130,246,0.5)] border-2 border-white/20 hover:scale-125 transition-transform; 
+      @apply appearance-none w-4 h-4 rounded-full bg-brand-accent cursor-pointer shadow-[0_0_15px_rgba(0,242,255,0.5)] border-2 border-white/20 hover:scale-125 transition-transform; 
     }
     .stat-card { 
       @apply bg-black/40 border border-brand-border p-6 rounded-2xl transition-all hover:border-brand-accent/20; 
@@ -24,13 +21,13 @@
       @apply py-3 rounded-xl border border-brand-border bg-brand-bg3/30 text-[10px] font-bold font-mono transition-all duration-300 text-brand-text3 uppercase hover:text-white hover:border-brand-accent/50; 
     }
     .control-btn.active { 
-      @apply border-brand-accent bg-brand-accent/10 text-brand-accent shadow-[0_0_20px_rgba(59,130,246,0.1)]; 
+      @apply border-brand-accent bg-brand-accent/10 text-brand-accent shadow-[0_0_20px_rgba(0,242,255,0.1)]; 
     }
     .grad-checkpoint-btn { 
       @apply w-12 h-6 rounded-full p-1 transition-colors duration-300 flex items-center bg-brand-border; 
     }
     .grad-checkpoint-btn.active { 
-      @apply bg-brand-accent shadow-[0_0_15px_rgba(59,130,246,0.3)]; 
+      @apply bg-brand-accent shadow-[0_0_15px_rgba(0,242,255,0.3)]; 
     }
     .grad-checkpoint-handle { 
       @apply block w-4 h-4 rounded-full bg-white transition-transform duration-300; 
