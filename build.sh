@@ -3,4 +3,5 @@
 # Install dependencies
 pip install -r requirements.txt
 
-# Database migrations are handled separately for Neon
+# Run database migrations to update Neon
+flask db upgrade
