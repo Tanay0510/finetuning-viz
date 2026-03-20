@@ -18,6 +18,7 @@ MODEL_SIZES = constants['MODEL_SIZES']
 DEEP_DIVES = constants['DEEP_DIVES']
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from authlib.integrations.flask_client import OAuth
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -28,6 +29,16 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+oauth = OAuth(app)
+
+google = oauth.register(
+    name='google',
+    client_id=os.environ.get('GOOGLE_CLIENT_ID'),
+    client_secret=os.environ.get('GOOGLE_CLIENT_SECRET'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={'scope': 'openid email profile'}
+)
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
@@ -37,8 +48,9 @@ class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(200), nullable=False)
+    password = db.Column(db.String(200), nullable=True)
     name = db.Column(db.String(100), nullable=False)
+    google_id = db.Column(db.String(100), unique=True, nullable=True)
     recipes = db.relationship('Recipe', backref='author', lazy=True)
 
 class Recipe(db.Model):
@@ -92,6 +104,33 @@ def register():
         login_user(new_user)
         return redirect(url_for('explore'))
     return render_template("register.html")
+
+@app.route("/login/google")
+def login_google():
+    redirect_uri = url_for('google_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route("/login/google/callback")
+def google_callback():
+    token = google.authorize_access_token()
+    user_info = token.get('userinfo')
+    if user_info:
+        user = User.query.filter_by(email=user_info['email']).first()
+        if not user:
+            user = User(
+                email=user_info['email'],
+                name=user_info['name'],
+                google_id=user_info['sub']
+            )
+            db.session.add(user)
+            db.session.commit()
+        else:
+            if not user.google_id:
+                user.google_id = user_info['sub']
+                db.session.commit()
+        login_user(user)
+        return redirect(url_for('explore'))
+    return redirect(url_for('login'))
 
 @app.route("/logout")
 @login_required
