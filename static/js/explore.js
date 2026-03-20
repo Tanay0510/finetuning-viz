@@ -1,8 +1,3 @@
-/**
- * Pro-Grade 3D Explorer - llmviz.studio
- * High-fidelity neural architecture visualization.
- */
-
 let currentMethod = null; 
 let scene, camera, renderer, composer, dead = false;
 let camAngle = {th: 0.6, ph: 0.2, d: 35};
@@ -11,16 +6,6 @@ let raycaster = new THREE.Raycaster();
 let sceneObjects = { layers: [], extras: [], annotations: [], dataParticles: null };
 let isExploded = false;
 let trainingProgress = 0;
-
-// High-End Industrial Palette
-const THEME = {
-    base: 0x0a0c14,
-    glass: 0x1a1e2e,
-    wireframe: 0x3b82f6,
-    accent: 0x60a5fa,
-    grid: 0x161b22,
-    particle: 0x3b82f6
-};
 
 const ARCH = [
   { id: 'embed', name: 'EMBEDDING_VECT', baseZ: -10, color: 0x475569, w: 8, h: 8 },
@@ -36,42 +21,36 @@ function initThree() {
   const container = cvs.parentElement;
   
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(THEME.base);
-  scene.fog = new THREE.FogExp2(THEME.base, 0.02);
+  scene.background = new THREE.Color(0x05070a);
+  scene.fog = new THREE.FogExp2(0x05070a, 0.01);
 
-  camera = new THREE.PerspectiveCamera(40, container.clientWidth/container.clientHeight, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
   
-  renderer = new THREE.WebGLRenderer({canvas:cvs, antialias:true, powerPreference: "high-performance"});
+  renderer = new THREE.WebGLRenderer({canvas:cvs, antialias:true, alpha: true});
   renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(window.devicePixelRatio);
   
-  // High-End Post Processing
+  // Lighting
+  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+  const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  mainLight.position.set(10, 20, 10);
+  scene.add(mainLight);
+
+  const accentLight = new THREE.PointLight(0x00f2ff, 2, 100);
+  accentLight.position.set(-10, 10, 10);
+  scene.add(accentLight);
+
+  const grid = new THREE.GridHelper(200, 50, 0x1e293b, 0x0a0d14);
+  grid.position.y = -10;
+  scene.add(grid);
+
+  // Composer for Bloom
   const renderScene = new THREE.RenderPass(scene, camera);
-  const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 1.2, 0.4, 0.85);
+  const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 1.0, 0.4, 0.85);
   composer = new THREE.EffectComposer(renderer);
   composer.addPass(renderScene);
   composer.addPass(bloomPass);
 
-  // Studio Lighting
-  const ambient = new THREE.AmbientLight(0xffffff, 0.2);
-  scene.add(ambient);
-
-  const spot = new THREE.SpotLight(0xffffff, 100);
-  spot.position.set(20, 40, 20);
-  spot.angle = 0.3;
-  spot.penumbra = 1;
-  scene.add(spot);
-
-  const rimLight = new THREE.DirectionalLight(0x3b82f6, 2);
-  rimLight.position.set(-10, -10, -10);
-  scene.add(rimLight);
-
-  // Technical Grid
-  const grid = new THREE.GridHelper(200, 80, 0x1e293b, 0x0f172a);
-  grid.position.y = -10;
-  scene.add(grid);
-
-  // Interaction
   cvs.addEventListener('mousedown', e=>{mouse={...mouse, dn:true,lx:e.clientX,ly:e.clientY}});
   window.addEventListener('mousemove', e=>{
     const rect = cvs.getBoundingClientRect();
@@ -98,14 +77,12 @@ function initThree() {
 
 function createTensorLayer(def, methodColor) {
     const group = new THREE.Group();
-    
-    // Pro Material: Frosted Glass / Metallic mix
     const mat = new THREE.MeshStandardMaterial({
         color: 0x1a1e2e,
-        metalness: 0.9,
+        metalness: 0.8,
         roughness: 0.2,
         transparent: true,
-        opacity: 0.4,
+        opacity: 0.6,
         emissive: methodColor,
         emissiveIntensity: 0
     });
@@ -114,36 +91,28 @@ function createTensorLayer(def, methodColor) {
     const mesh = new THREE.Mesh(geo, mat);
     group.add(mesh);
 
-    // Wireframe Overlay (Technical Detail)
     const wireGeo = new THREE.EdgesGeometry(geo);
-    const wireMat = new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.2 });
+    const wireMat = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.3 });
     const wire = new THREE.LineSegments(wireGeo, wireMat);
     group.add(wire);
-
-    // Subtle Internal Nodes (Instanced)
-    const nodeGeo = new THREE.BoxGeometry(0.1, 0.1, 0.1);
-    const nodeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 0.5 });
-    const count = 16;
-    const imesh = new THREE.InstancedMesh(nodeGeo, nodeMat, count);
-    const dummy = new THREE.Object3D();
-    for(let i=0; i<count; i++) {
-        dummy.position.set((Math.random()-0.5)*def.w*0.4, (Math.random()-0.5)*def.h*0.4, 0);
-        dummy.updateMatrix();
-        imesh.setMatrixAt(i, dummy.matrix);
-    }
-    group.add(imesh);
 
     return { group, mesh, mat, wire };
 }
 
 function rebuildScene() {
     if (!scene) return;
-    // Clear
-    while(scene.children.length > 4) { // Keep lights/grid
+    if (!currentMethod) currentMethod = METHODS[0];
+
+    while(scene.children.length > 4) {
         const o = scene.children[4];
         if(o.geometry) o.geometry.dispose();
+        if(o.material) {
+            if(Array.isArray(o.material)) o.material.forEach(m=>m.dispose());
+            else o.material.dispose();
+        }
         scene.remove(o);
     }
+    
     document.getElementById('annotations').innerHTML = '';
     sceneObjects = { layers: [], extras: [], annotations: [], dataParticles: null };
 
@@ -163,54 +132,35 @@ function rebuildScene() {
         sceneObjects.layers.push({ ...layer, baseZ: def.baseZ, isEmissive });
     });
 
-    // High-End Adapter Visualization
     if (['lora', 'qlora', 'dora'].includes(currentMethod.id)) {
         const qkv = sceneObjects.layers.find(l => l.baseZ === -4);
         const loraGroup = new THREE.Group();
-        
-        // Matrix A & B as thin sleek slabs
         const matA = new THREE.Mesh(new THREE.BoxGeometry(2, 6, 0.1), new THREE.MeshStandardMaterial({color: mc, emissive: mc, emissiveIntensity: 2}));
         matA.position.set(4, 0, 0.2);
-        
         const matB = new THREE.Mesh(new THREE.BoxGeometry(0.1, 6, 2), new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1}));
         matB.position.set(4.5, 0, 0);
-        
-        loraGroup.add(matA);
-        loraGroup.add(matB);
+        loraGroup.add(matA); loraGroup.add(matB);
         qkv.group.add(loraGroup);
-        
-        const loraAnchor = new THREE.Object3D();
-        loraAnchor.position.set(4.5, 4, 0);
-        loraGroup.add(loraAnchor);
-        createAnnotation('LORA_ADAPTER_CORE', loraAnchor);
+        const loraAnchor = new THREE.Object3D(); loraAnchor.position.set(4.5, 4, 0); loraGroup.add(loraAnchor);
+        createAnnotation('LORA_ADAPTER', loraAnchor);
     }
 
-    // Pro Particle Data Flow
     initDataParticles();
 }
 
 function initDataParticles() {
-    const count = 2000;
+    const count = 1000;
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(count * 3);
     const vel = new Float32Array(count);
-    
     for(let i=0; i<count; i++) {
-        pos[i*3] = (Math.random()-0.5) * 10;
-        pos[i*3+1] = (Math.random()-0.5) * 10;
-        pos[i*3+2] = -20 + Math.random() * 40;
+        pos[i*3] = (Math.random()-0.5) * 15;
+        pos[i*3+1] = (Math.random()-0.5) * 15;
+        pos[i*3+2] = -30 + Math.random() * 60;
         vel[i] = 0.1 + Math.random() * 0.2;
     }
-    
     geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const mat = new THREE.PointsMaterial({
-        color: 0x60a5fa,
-        size: 0.05,
-        transparent: true,
-        opacity: 0.6,
-        blending: THREE.AdditiveBlending
-    });
-    
+    const mat = new THREE.PointsMaterial({ color: 0x00f2ff, size: 0.05, transparent: true, opacity: 0.4 });
     const points = new THREE.Points(geo, mat);
     scene.add(points);
     sceneObjects.dataParticles = { points, pos, vel };
@@ -227,32 +177,28 @@ function animate() {
     camera.position.z = Math.cos(camAngle.th) * Math.cos(camAngle.ph) * camAngle.d;
     camera.lookAt(0, 0, 0);
 
-    // Smoother Explode Transition
     const explodeMult = isExploded ? 3.0 : 1.0;
     sceneObjects.layers.forEach((layer, i) => {
         layer.group.position.z += (layer.baseZ * explodeMult - layer.group.position.z) * 0.05;
         if (layer.isEmissive) {
-            const pulse = 0.5 + Math.sin(t * 3 + i) * 0.5;
-            layer.mat.emissiveIntensity = pulse * (1 + trainingProgress * 2);
-            layer.wire.material.opacity = 0.2 + pulse * 0.5;
+            layer.mat.emissiveIntensity = (0.5 + Math.sin(t * 3 + i) * 0.5) * (1 + trainingProgress * 2);
         }
     });
 
-    // Pro Particle Animation
     if (sceneObjects.dataParticles) {
-        const {pos, vel} = sceneObjects.dataParticles;
+        const {pos} = sceneObjects.dataParticles;
         for(let i=0; i<pos.length/3; i++) {
-            pos[i*3+2] += vel[i] * (1 + trainingProgress * 5);
-            if(pos[i*3+2] > 20) pos[i*3+2] = -20;
+            pos[i*3+2] += 0.2 * (1 + trainingProgress * 5);
+            if(pos[i*3+2] > 30) pos[i*3+2] = -30;
         }
         sceneObjects.dataParticles.points.geometry.attributes.position.needsUpdate = true;
     }
 
     updateAnnotations();
-    composer.render();
+    if (composer) composer.render();
+    else renderer.render(scene, camera);
 }
 
-// Reuse existing annotation/hover logic but update styling
 function createAnnotation(text, obj3D) {
   const el = document.createElement('div');
   el.className = 'annotation-tag';
@@ -266,21 +212,19 @@ function checkHover(e) {
     const intersects = raycaster.intersectObjects(scene.children, true);
     const tooltip = document.getElementById('hover-tooltip');
     if (!tooltip) return;
-    
     if (intersects.length > 0) {
         let obj = intersects[0].object;
         let layer = null;
         sceneObjects.layers.forEach(l => {
             if (l.group === obj.parent || l.group === obj.parent?.parent) layer = l;
         });
-
         if (layer) {
             tooltip.classList.remove('hidden');
             tooltip.style.left = `${e.clientX + 20}px`;
             tooltip.style.top = `${e.clientY + 20}px`;
             const arch = ARCH.find(a => a.baseZ === layer.baseZ);
-            document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER_SCHEMA';
-            document.getElementById('tooltip-dim').textContent = arch ? `DIM: ${arch.w * 512}x${arch.h * 512}` : 'TYPE: RANK_DECOMPOSED';
+            document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER';
+            document.getElementById('tooltip-dim').textContent = arch ? `DIM: ${arch.w * 512}x${arch.h * 512}` : 'NODE: ACTIVE';
             return;
         }
     }
@@ -302,7 +246,7 @@ function updateAnnotations() {
 
 function initExplore() {
     initThree();
-    pickMethod('lora');
+    rebuildScene();
     animate();
 }
 
