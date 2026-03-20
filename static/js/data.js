@@ -1,23 +1,47 @@
-const words = ["Fine-tuning", "is", "the", "process", "of", "taking", "a", "pre-trained", "model", "and", "adapting", "it", "to", "a", "specific", "task", "or", "dataset.", "Sample", "packing", "makes", "this", "significantly", "more", "efficient", "by", "concatenating", "examples."];
+let currentMicroModel = 'llama2';
 const colors = ["#3B82F6", "#8B5CF6", "#EC4899", "#F59E0B", "#10B981", "#60A5FA"];
+
+function setMicroscopeModel(model) {
+    currentMicroModel = model;
+    document.querySelectorAll('[id^="micro-"]').forEach(b => b.classList.remove('active', 'border-brand-accent', 'text-brand-accent'));
+    const btn = document.getElementById(`micro-${model}`);
+    btn.classList.add('active', 'border-brand-accent', 'text-brand-accent');
+    tokenize();
+}
 
 function tokenize() {
   const container = document.getElementById('token-stream');
-  if (!container) return;
+  const input = document.getElementById('micro-input').value;
+  if (!container || !input) return;
+  
   container.innerHTML = '';
   
-  words.forEach((word, i) => {
-    setTimeout(() => {
+  let tokens = [];
+  if (currentMicroModel === 'llama2') {
+      // Simulation: Llama-2 is aggressive, often splitting words
+      tokens = input.split(' ').flatMap(w => w.length > 6 ? [w.substring(0, 4), w.substring(4)] : [w]);
+  } else if (currentMicroModel === 'gpt4') {
+      // Simulation: GPT-4 has a huge vocab, efficient
+      tokens = input.split(' ');
+  } else {
+      // Mistral: Middle ground
+      tokens = input.match(/\b(\w+)\b/g) || [];
+  }
+
+  tokens.forEach((token, i) => {
       const chip = document.createElement('span');
       chip.className = 'token-chip animate-token';
       const color = colors[i % colors.length];
       chip.style.backgroundColor = `${color}15`;
       chip.style.color = color;
       chip.style.borderColor = `${color}30`;
-      chip.textContent = word;
+      chip.textContent = token;
       container.appendChild(chip);
-    }, i * 40);
   });
+
+  const words = input.trim().split(/\s+/).length;
+  const efficiency = (tokens.length / words).toFixed(2);
+  document.getElementById('micro-efficiency').textContent = `${efficiency} tokens/word`;
 }
 
 function startPacking() {

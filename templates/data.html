@@ -47,16 +47,21 @@
       <div class="data-card fade-up">
         <div class="flex justify-between items-center mb-8">
           <div>
-            <h2 class="text-xl font-bold">1. Tokenization</h2>
-            <p class="text-brand-text3 text-xs font-mono uppercase mt-1">Llama-2 BPE Encoding</p>
+            <h2 class="text-xl font-bold">1. Tokenization Microscope</h2>
+            <div class="flex gap-2 mt-2">
+                <button onclick="setMicroscopeModel('llama2')" id="micro-llama2" class="px-3 py-1 rounded-lg border border-brand-border text-[9px] font-bold uppercase tracking-widest active">Llama-2</button>
+                <button onclick="setMicroscopeModel('gpt4')" id="micro-gpt4" class="px-3 py-1 rounded-lg border border-brand-border text-[9px] font-bold uppercase tracking-widest">GPT-4</button>
+                <button onclick="setMicroscopeModel('mistral')" id="micro-mistral" class="px-3 py-1 rounded-lg border border-brand-border text-[9px] font-bold uppercase tracking-widest">Mistral</button>
+            </div>
           </div>
-          <button onclick="tokenize()" class="btn-primary !py-2 !text-xs">RE-TOKENIZE</button>
+          <div class="text-right">
+            <div class="text-[10px] font-mono text-brand-text3 uppercase mb-1">Efficiency</div>
+            <div class="text-lg font-bold text-brand-accent" id="micro-efficiency">0.0 tokens/word</div>
+          </div>
         </div>
 
         <div class="bg-black/40 rounded-2xl border border-brand-border p-6 mb-6">
-          <p class="text-brand-text2 text-sm leading-relaxed" id="raw-text">
-            "Fine-tuning is the process of taking a pre-trained model and adapting it to a specific task or dataset. Sample packing makes this significantly more efficient by concatenating examples."
-          </p>
+          <textarea id="micro-input" oninput="tokenize()" class="w-full bg-transparent border-none text-brand-text2 text-sm leading-relaxed focus:outline-none resize-none" rows="3">Fine-tuning is the process of taking a pre-trained model and adapting it to a specific task or dataset. Sample packing makes this significantly more efficient by concatenating examples.</textarea>
         </div>
 
         <div class="flex flex-wrap" id="token-stream">

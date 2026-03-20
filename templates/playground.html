@@ -281,10 +281,38 @@
         </div>
 
         <!-- NEW: Detailed Breakdown -->
-        <div class="bg-black/40 rounded-3xl border border-brand-border p-6 mb-10 relative z-10">
+        <div class="bg-black/40 rounded-3xl border border-brand-border p-6 mb-6 relative z-10">
             <span class="rack-label !mb-4 opacity-50">VRAM Budget Breakdown</span>
             <div class="space-y-3" id="vram-breakdown">
                 <!-- Items like Weights: 14GB will go here -->
+            </div>
+        </div>
+
+        <!-- NEW: Training Simulator -->
+        <div class="bg-brand-accent/5 rounded-3xl border border-brand-accent/20 p-6 mb-10 relative z-10 overflow-hidden group">
+            <div class="flex justify-between items-center mb-6">
+                <span class="rack-label !mb-0 text-brand-accent">Neural Training Simulator</span>
+                <button onclick="toggleSimulation()" id="sim-btn" class="px-4 py-1.5 rounded-lg bg-brand-accent text-white text-[10px] font-bold uppercase tracking-wider hover:scale-105 transition-all shadow-lg shadow-brand-accent/20">
+                    ▶ Run Simulation
+                </button>
+            </div>
+            
+            <div class="h-48 w-full bg-black/60 rounded-2xl border border-brand-border relative flex items-center justify-center">
+                <canvas id="loss-canvas" class="w-full h-full p-2"></canvas>
+                <div id="sim-overlay" class="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm transition-opacity duration-500">
+                    <span class="text-[10px] font-mono text-brand-text3 uppercase tracking-[0.2em]">Ready for Convergence Test</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4 mt-4">
+                <div class="text-center p-2 rounded-xl bg-black/20 border border-brand-border/50">
+                    <div class="text-[8px] text-brand-text3 uppercase font-bold">Current Loss</div>
+                    <div class="text-sm font-mono text-white" id="sim-loss">—</div>
+                </div>
+                <div class="text-center p-2 rounded-xl bg-black/20 border border-brand-border/50">
+                    <div class="text-[8px] text-brand-text3 uppercase font-bold">Stability</div>
+                    <div class="text-sm font-mono text-green-400" id="sim-status">—</div>
+                </div>
             </div>
         </div>
 
@@ -329,9 +357,10 @@
         </div>
         <div class="mt-10 flex flex-col sm:flex-row justify-between items-center gap-6">
             <p class="text-[10px] text-brand-text3 max-w-[350px] font-mono uppercase leading-relaxed">Recipe mappings are dynamically adjusted based on playground state and sharding strategy.</p>
-            <div class="flex gap-4">
+            <div class="flex flex-wrap gap-4 justify-center">
                 <button onclick="saveRecipe()" class="btn-ghost !py-3 !px-8 !text-xs !rounded-xl">Save to Profile</button>
-                <button onclick="downloadRecipe()" class="btn-primary !py-3 !px-8 !text-xs !rounded-xl">Download .yaml</button>
+                <button onclick="downloadRecipe()" class="btn-ghost !py-3 !px-8 !text-xs !rounded-xl">.yaml Only</button>
+                <button onclick="downloadDevOpsBundle()" class="btn-primary !py-3 !px-8 !text-xs !rounded-xl shadow-brand-accent/40">📦 Download DevOps Bundle</button>
             </div>
         </div>
     </div>

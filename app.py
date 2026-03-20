@@ -228,10 +228,26 @@ def api_get_recipe(recipe_id):
         "config": recipe.config
     })
 
+@app.route("/api/recipes/delete/<int:recipe_id>", methods=['DELETE'])
+@login_required
+def api_delete_recipe(recipe_id):
+    recipe = Recipe.query.get_or_404(recipe_id)
+    if recipe.user_id != current_user.id:
+        return jsonify({"error": "Unauthorized"}), 403
+    db.session.delete(recipe)
+    db.session.commit()
+    return jsonify({"message": "Recipe deleted"})
+
 @app.route("/zoo")
 def zoo():
     public_recipes = Recipe.query.filter_by(is_public=True).all()
     return render_template("zoo.html", recipes=public_recipes, methods=METHODS)
+
+@app.route("/profile")
+@login_required
+def profile():
+    user_recipes = Recipe.query.filter_by(user_id=current_user.id).all()
+    return render_template("profile.html", recipes=user_recipes)
 
 @app.route("/api/methods")
 def api_methods():

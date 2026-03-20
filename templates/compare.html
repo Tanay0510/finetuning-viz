@@ -38,41 +38,82 @@
   <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <!-- Viewport A -->
     <div class="compare-card fade-up">
-      <div class="p-6 border-b border-brand-border flex justify-between items-center bg-brand-bg3/30">
-        <div class="flex items-center gap-3">
-            <span class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
-            <span class="text-xs font-mono font-bold tracking-widest text-brand-text3">SOURCE_A</span>
+      <div class="p-6 border-b border-brand-border space-y-4 bg-brand-bg3/30">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
+                <span class="text-xs font-mono font-bold tracking-widest text-brand-text3">SOURCE_A</span>
+            </div>
+            <select id="select-a" class="method-select" onchange="pickMethod('a', this.value)">
+              {% for m in methods %}
+              <option value="{{ m.id }}" {% if m.id == 'full' %}selected{% endif %}>{{ m.emoji }} {{ m.name }}</option>
+              {% endfor %}
+            </select>
         </div>
-        <select id="select-a" class="method-select" onchange="pickMethod('a', this.value)">
-          {% for m in methods %}
-          <option value="{{ m.id }}" {% if m.id == 'full' %}selected{% endif %}>{{ m.emoji }} {{ m.name }}</option>
-          {% endfor %}
-        </select>
+        <div class="flex gap-2">
+            {% for ms in models %}
+            <button onclick="pickModel('a', '{{ ms.id }}')" id="model-a-{{ ms.id }}" class="px-2 py-1 rounded bg-black/40 border border-brand-border text-[8px] font-bold uppercase tracking-widest hover:border-brand-accent transition-all {% if ms.id == '7b' %}border-brand-accent text-brand-accent{% endif %}">{{ ms.name }}</button>
+            {% endfor %}
+        </div>
       </div>
-      <div class="relative h-[500px] bg-black">
+      <div class="relative h-[400px] bg-black">
         <canvas id="canvas-a" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
-        <div class="absolute bottom-6 left-6 z-10 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/5 font-mono text-[10px]" id="stats-a"></div>
       </div>
     </div>
 
     <!-- Viewport B -->
     <div class="compare-card fade-up delay-1">
-      <div class="p-6 border-b border-brand-border flex justify-between items-center bg-brand-bg3/30">
-        <div class="flex items-center gap-3">
-            <span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span>
-            <span class="text-xs font-mono font-bold tracking-widest text-brand-text3">SOURCE_B</span>
+      <div class="p-6 border-b border-brand-border space-y-4 bg-brand-bg3/30">
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></span>
+                <span class="text-xs font-mono font-bold tracking-widest text-brand-text3">SOURCE_B</span>
+            </div>
+            <select id="select-b" class="method-select" onchange="pickMethod('b', this.value)">
+              {% for m in methods %}
+              <option value="{{ m.id }}" {% if m.id == 'lora' %}selected{% endif %}>{{ m.emoji }} {{ m.name }}</option>
+              {% endfor %}
+            </select>
         </div>
-        <select id="select-b" class="method-select" onchange="pickMethod('b', this.value)">
-          {% for m in methods %}
-          <option value="{{ m.id }}" {% if m.id == 'lora' %}selected{% endif %}>{{ m.emoji }} {{ m.name }}</option>
-          {% endfor %}
-        </select>
+        <div class="flex gap-2">
+            {% for ms in models %}
+            <button onclick="pickModel('b', '{{ ms.id }}')" id="model-b-{{ ms.id }}" class="px-2 py-1 rounded bg-black/40 border border-brand-border text-[8px] font-bold uppercase tracking-widest hover:border-brand-accent transition-all {% if ms.id == '7b' %}border-brand-accent text-brand-accent{% endif %}">{{ ms.name }}</button>
+            {% endfor %}
+        </div>
       </div>
-      <div class="relative h-[500px] bg-black">
+      <div class="relative h-[400px] bg-black">
         <canvas id="canvas-b" class="w-full h-full cursor-grab active:cursor-grabbing"></canvas>
-        <div class="absolute bottom-6 left-6 z-10 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/5 font-mono text-[10px]" id="stats-b"></div>
       </div>
     </div>
+  </div>
+
+  <!-- NEW: Technical Showdown Grid -->
+  <div class="mt-12 fade-up delay-2">
+      <div class="grid grid-cols-[1fr,2fr,1fr] gap-4 mb-4 font-mono text-[10px] uppercase tracking-widest text-brand-text3 px-8">
+          <div class="text-left">SOURCE_A</div>
+          <div class="text-center">Technical Metrics</div>
+          <div class="text-right">SOURCE_B</div>
+      </div>
+      
+      <div class="bg-brand-bg2/60 border border-brand-border rounded-[32px] overflow-hidden shadow-2xl">
+          <div class="divide-y divide-brand-border">
+              <div class="grid grid-cols-[1fr,2fr,1fr] items-center p-6 px-8 hover:bg-white/5 transition-colors">
+                  <div class="text-xl font-bold text-white font-mono" id="metric-a-vram">0GB</div>
+                  <div class="text-center font-mono text-[9px] uppercase tracking-[0.3em] text-brand-text3">Peak VRAM Utilization</div>
+                  <div class="text-xl font-bold text-white font-mono text-right" id="metric-b-vram">0GB</div>
+              </div>
+              <div class="grid grid-cols-[1fr,2fr,1fr] items-center p-6 px-8 hover:bg-white/5 transition-colors">
+                  <div class="text-lg font-bold text-brand-text2 font-mono" id="metric-a-params">0</div>
+                  <div class="text-center font-mono text-[9px] uppercase tracking-[0.3em] text-brand-text3">Trainable Parameters</div>
+                  <div class="text-lg font-bold text-brand-text2 font-mono text-right" id="metric-b-params">0</div>
+              </div>
+              <div class="grid grid-cols-[1fr,2fr,1fr] items-center p-6 px-8 hover:bg-white/5 transition-colors">
+                  <div class="text-lg font-bold text-green-400 font-mono" id="metric-a-cost">$0.00</div>
+                  <div class="text-center font-mono text-[9px] uppercase tracking-[0.3em] text-brand-text3">Est. Cost (10k Samples)</div>
+                  <div class="text-lg font-bold text-green-400 font-mono text-right" id="metric-b-cost">$0.00</div>
+              </div>
+          </div>
+      </div>
   </div>
 
   <!-- Comparison Insights -->
@@ -94,147 +135,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-const METHODS = {{ methods | tojson }};
-
-// State for two engines
-const state = {
-    a: { scene: null, camera: null, renderer: null, composer: null, method: null, objects: {} },
-    b: { scene: null, camera: null, renderer: null, composer: null, method: null, objects: {} }
-};
-
-// Shared Camera Angle
-let camAngle = { th: 0.6, ph: 0.2, d: 45 };
-let mouse = { dn: false, lx: 0, ly: 0 };
-
-function initEngine(id) {
-    const cvs = document.getElementById(`canvas-${id}`);
-    const container = cvs.parentElement;
-    
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x020408, 0.015);
-    
-    const camera = new THREE.PerspectiveCamera(40, container.clientWidth / container.clientHeight, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ canvas: cvs, antialias: false, alpha: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    
-    // Simple light
-    scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const dl = new THREE.DirectionalLight(0xffffff, 1); dl.position.set(10, 20, 10); scene.add(dl);
-
-    state[id] = { scene, camera, renderer, objects: {}, method: null };
-    
-    // Add event listener to canvas A to drive BOTH cameras
-    cvs.addEventListener('mousedown', e => { mouse.dn = true; mouse.lx = e.clientX; mouse.ly = e.clientY; });
-}
-
-function createScene(id, methodId) {
-    const engine = state[id];
-    const method = METHODS.find(m => m.id === methodId);
-    engine.method = method;
-    
-    // Clear
-    while(engine.scene.children.length > 2) { // Keep lights
-        const o = engine.scene.children[2];
-        if(o.geometry) o.geometry.dispose();
-        engine.scene.remove(o);
-    }
-
-    const mc = new THREE.Color(method.color);
-    const isFull = ['full', 'rlhf', 'galore'].includes(methodId);
-
-    // Render a simplified matrix structure for comparison
-    const geo = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-    const mat = new THREE.MeshStandardMaterial({
-        color: isFull ? mc : 0x1a2238,
-        emissive: isFull ? mc : 0x000000,
-        emissiveIntensity: isFull ? 1 : 0,
-        transparent: true, opacity: isFull ? 0.9 : 0.2
-    });
-
-    const group = new THREE.Group();
-    for(let z=0; z<5; z++) {
-        const box = new THREE.Mesh(new THREE.BoxGeometry(8, 8, 0.5), new THREE.MeshBasicMaterial({color: mc, wireframe: true, transparent: true, opacity: 0.1}));
-        box.position.z = (z-2) * 6;
-        group.add(box);
-        
-        // Add tiny blocks inside
-        if (isFull) {
-            const imesh = new THREE.InstancedMesh(geo, mat, 16);
-            const dummy = new THREE.Object3D();
-            for(let i=0; i<16; i++) {
-                dummy.position.set((i%4-2)*1.5, (Math.floor(i/4)-2)*1.5, (z-2)*6);
-                dummy.updateMatrix();
-                imesh.setMatrixAt(i, dummy.matrix);
-            }
-            group.add(imesh);
-        }
-    }
-
-    // Add Method Specifics
-    if (['lora', 'qlora', 'dora'].includes(methodId)) {
-        const adapterGeo = new THREE.BoxGeometry(2, 8, 0.5);
-        const adapterMat = new THREE.MeshStandardMaterial({color: mc, emissive: mc, emissiveIntensity: 2});
-        for(let z=0; z<5; z++) {
-            const adapter = new THREE.Mesh(adapterGeo, adapterMat);
-            adapter.position.set(5, 0, (z-2)*6);
-            group.add(adapter);
-        }
-    }
-
-    engine.scene.add(group);
-    document.getElementById(`stats-${id}`).innerHTML = `<span class="text-brand-text3 mr-2">VRAM:</span> <span style="color:${method.color}">${method.stats.vram_7b} GB</span><br/><span class="text-brand-text3 mr-2">PARAMS:</span> <span>${method.stats.params}</span>`;
-    
-    updateComparisonInsights();
-}
-
-function pickMethod(id, methodId) {
-    createScene(id, methodId);
-}
-
-function updateComparisonInsights() {
-    const a = state.a.method;
-    const b = state.b.method;
-    if(!a || !b) return;
-
-    const memDiff = Math.abs(parseInt(a.stats.vram_7b) - parseInt(b.stats.vram_7b));
-    document.getElementById('insight-memory').textContent = `${a.short} vs ${b.short} shows a ${memDiff}GB VRAM delta. ${parseInt(a.stats.vram_7b) < parseInt(b.stats.vram_7b) ? a.short : b.short} is significantly more memory-efficient.`;
-    document.getElementById('insight-grads').textContent = `In ${a.short}, ${a.stats.params} parameters are updated, while in ${b.short}, ${b.stats.params} are updated. This changes the gradient surface density.`;
-}
-
-window.addEventListener('mousemove', e => {
-    if(!mouse.dn) return;
-    camAngle.th -= (e.clientX - mouse.lx) * 0.005;
-    camAngle.ph = Math.max(-0.5, Math.min(0.8, camAngle.ph + (e.clientY - mouse.ly) * 0.005));
-    mouse.lx = e.clientX; mouse.ly = e.clientY;
-});
-window.addEventListener('mouseup', () => { mouse.dn = false; });
-
-function animate() {
-    requestAnimationFrame(animate);
-    const t = performance.now() / 1000;
-
-    // Sync cameras
-    ['a', 'b'].forEach(id => {
-        const engine = state[id];
-        if(!engine.camera) return;
-        
-        engine.camera.position.x = Math.sin(camAngle.th) * Math.cos(camAngle.ph) * camAngle.d;
-        engine.camera.position.y = Math.sin(camAngle.ph) * camAngle.d + 2;
-        engine.camera.position.z = Math.cos(camAngle.th) * Math.cos(camAngle.ph) * camAngle.d;
-        engine.camera.lookAt(0, 0, 0);
-        
-        engine.renderer.render(engine.scene, engine.camera);
-    });
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    initEngine('a');
-    initEngine('b');
-    pickMethod('a', 'full');
-    pickMethod('b', 'lora');
-    animate();
-});
-</script>
+<script src="{{ url_for('static', filename='js/compare.js') }}"></script>
 {% endblock %}
