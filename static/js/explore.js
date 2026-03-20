@@ -1,44 +1,435 @@
+/**
+ * Elite Engineering Laboratory - llmviz.studio
+ * High-fidelity neural architecture visualization with drill-down logic.
+ */
+
 let currentMethod = null; 
 let scene, camera, renderer, composer, dead = false;
 let camAngle = {th: 0.6, ph: 0.2, d: 35};
 let mouse = {dn:false, lx:0, ly:0, x:0, y:0};
 let raycaster = new THREE.Raycaster();
-let sceneObjects = { layers: [], extras: [], annotations: [], dataParticles: null };
+let sceneObjects = { layers: [], extras: [], annotations: [], forwardParticles: null, backwardParticles: null };
 let isExploded = false;
 let trainingProgress = 0;
+let focusedLayerId = null;
+let rgbShiftPass;
+let time = 0;
+
+const THEME = {
+    base: 0x05070a,
+    glass: 0x1a1e2e,
+    wireframe: 0x00f2ff,
+    accent: 0x00f2ff,
+    gradient: 0x7000ff,
+    grid: 0x161b22,
+};
 
 const ARCH = [
   { 
-    id: 'embed', name: 'EMBEDDING_VECT', baseZ: -10, color: 0x475569, w: 8, h: 8,
-    desc: 'Transforms discrete tokens (words) into continuous vectors. This is where the model "conceptualizes" the meaning of text.'
+    id: 'embed', name: 'EMBEDDING_VECT', baseZ: -12, color: 0x475569, w: 8, h: 8, slices: 4,
+    desc: 'Transforms discrete tokens (words) into continuous vectors. This is where the model "conceptualizes" the meaning of text.',
+    math: 'E = Input_{one-hot} × W_{embed}',
+    specs: { 'Type': 'Lookup Table', 'Input': 'Vocab ID', 'Output': 'Hidden State' }
   },
   { 
-    id: 'qkv', name: 'ATTN_QKV_HEADS', baseZ: -4, color: 0x3B82F6, w: 12, h: 12,
-    desc: 'Query, Key, and Value matrices. The core of Self-Attention that allows the model to find relationships between words.'
+    id: 'qkv', name: 'ATTN_QKV_HEADS', baseZ: -4, color: 0x3B82F6, w: 12, h: 12, slices: 32,
+    desc: 'Query, Key, and Value matrices. The core of Self-Attention that allows the model to find relationships between words.',
+    math: 'Attention(Q,K,V) = softmax(QK^T / √d_k)V',
+    specs: { 'Complexity': 'O(n^2)', 'Heads': '32', 'Mechanism': 'GQA/MHA' }
   },
   { 
-    id: 'proj', name: 'DENSE_PROJECTION', baseZ: 2, color: 0x8B5CF6, w: 10, h: 10,
-    desc: 'Combines outputs from multiple attention heads back into a unified vector for the next stage of processing.'
+    id: 'proj', name: 'DENSE_PROJECTION', baseZ: 4, color: 0x8B5CF6, w: 10, h: 10, slices: 8,
+    desc: 'Combines outputs from multiple attention heads back into a unified vector for the next stage of processing.',
+    math: 'Output = Concat(head_1, ..., head_n)W_O',
+    specs: { 'Type': 'Linear', 'Params': 'd_model^2', 'Ops': 'Matrix Mul' }
   },
   { 
-    id: 'ffn1', name: 'FFN_UP_GATE', baseZ: 8, color: 0xEC4899, w: 16, h: 8,
-    desc: 'Feed-Forward Network Up-Projection. Expands dimensionality to allow the model to learn complex non-linear features.'
+    id: 'ffn1', name: 'FFN_UP_GATE', baseZ: 12, color: 0xEC4899, w: 16, h: 8, slices: 16,
+    desc: 'Feed-Forward Network Up-Projection. Expands dimensionality to allow the model to learn complex non-linear features.',
+    math: 'Intermediate = SiLU(xW_1) ⊗ xW_2',
+    specs: { 'Expansion': '4x-8x', 'Activation': 'SwiGLU', 'Compute': 'Heavy' }
   },
   { 
-    id: 'ffn2', name: 'FFN_DOWN_PROJ', baseZ: 14, color: 0x10B981, w: 10, h: 10,
-    desc: 'Projects the expanded data back to the model dimension, summarizing the newly learned high-level features.'
+    id: 'ffn2', name: 'FFN_DOWN_PROJ', baseZ: 20, color: 0x10B981, w: 10, h: 10, slices: 8,
+    desc: 'Projects the expanded data back to the model dimension, summarizing the newly learned high-level features.',
+    math: 'FFN(x) = Intermediate × W_3',
+    specs: { 'Type': 'Linear', 'Role': 'Aggregation', 'Output': 'Resid. Add' }
   }
 ];
+
+function initThree() {
+  const cvs = document.getElementById('three-canvas');
+  if (!cvs) return;
+  const container = cvs.parentElement;
+  
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(THEME.base);
+  scene.fog = new THREE.FogExp2(THEME.base, 0.015);
+
+  camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
+  
+  renderer = new THREE.WebGLRenderer({canvas:cvs, antialias:true, alpha: true});
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
+  
+  // High-End Environment
+  scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+  
+  const mainLight = new THREE.DirectionalLight(0xffffff, 1.5);
+  mainLight.position.set(15, 25, 15);
+  scene.add(mainLight);
+
+  const accentLight = new THREE.PointLight(THEME.accent, 3, 100);
+  accentLight.position.set(-15, 10, 10);
+  scene.add(accentLight);
+
+  const gradientLight = new THREE.PointLight(THEME.gradient, 2, 100);
+  gradientLight.position.set(15, -10, 20);
+  scene.add(gradientLight);
+
+  // Infinite Mirror Floor
+  const floorGeo = new THREE.PlaneGeometry(200, 200);
+  const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x020305,
+      metalness: 0.9,
+      roughness: 0.1,
+  });
+  const floor = new THREE.Mesh(floorGeo, floorMat);
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -12;
+  scene.add(floor);
+
+  // Server Chassis Wireframe
+  const chassisGeo = new THREE.BoxGeometry(40, 30, 60);
+  const chassisMat = new THREE.LineBasicMaterial({ color: 0x1e293b, transparent: true, opacity: 0.3 });
+  const chassis = new THREE.LineSegments(new THREE.EdgesGeometry(chassisGeo), chassisMat);
+  chassis.position.y = 3;
+  scene.add(chassis);
+
+  // Post-Processing
+  const renderScene = new THREE.RenderPass(scene, camera);
+  const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 1.2, 0.5, 0.85);
+  
+  composer = new THREE.EffectComposer(renderer);
+  composer.addPass(renderScene);
+  composer.addPass(bloomPass);
+
+  // Digital Aberration (RGB Shift)
+  if (THREE.RGBShiftShader) {
+      rgbShiftPass = new THREE.ShaderPass(THREE.RGBShiftShader);
+      rgbShiftPass.uniforms['amount'].value = 0.0015;
+      composer.addPass(rgbShiftPass);
+  }
+
+  cvs.addEventListener('mousedown', e=>{mouse={...mouse, dn:true,lx:e.clientX,ly:e.clientY}});
+  cvs.addEventListener('click', e => {
+      if (Math.abs(e.clientX - mouse.lx) > 5 || Math.abs(e.clientY - mouse.ly) > 5) return;
+      checkClick(e);
+  });
+
+  window.addEventListener('mousemove', e=>{
+    const rect = cvs.getBoundingClientRect();
+    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+    if(!mouse.dn) {
+        checkHover(e);
+        return;
+    }
+    camAngle.th-=(e.clientX-mouse.lx)*0.005;
+    camAngle.ph=Math.max(-0.5,Math.min(0.8,camAngle.ph+(e.clientY-mouse.ly)*0.005));
+    mouse.lx=e.clientX; mouse.ly=e.clientY;
+  });
+  window.addEventListener('mouseup', ()=>{mouse.dn=false});
+  cvs.addEventListener('wheel', e=>{
+    camAngle.d=Math.max(15,Math.min(100,camAngle.d+e.deltaY*0.05));
+    e.preventDefault();
+  },{passive:false});
+
+  window.addEventListener('resize', () => {
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+    composer.setSize(container.clientWidth, container.clientHeight);
+  });
+}
+
+function createWaferLayer(def, methodColor) {
+    const group = new THREE.Group();
+    
+    const sliceZ = 0.1;
+    const gap = 0.2;
+    const totalDepth = def.slices * (sliceZ + gap);
+    
+    const geo = new THREE.BoxGeometry(def.w * 0.5, def.h * 0.5, sliceZ);
+    const mat = new THREE.MeshStandardMaterial({
+        color: THEME.glass,
+        metalness: 0.9,
+        roughness: 0.1,
+        transparent: true,
+        opacity: 0.5,
+        emissive: methodColor,
+        emissiveIntensity: 0
+    });
+
+    const imesh = new THREE.InstancedMesh(geo, mat, def.slices);
+    const dummy = new THREE.Object3D();
+    for(let i=0; i<def.slices; i++) {
+        dummy.position.set(0, 0, (i - def.slices/2) * (sliceZ + gap));
+        dummy.updateMatrix();
+        imesh.setMatrixAt(i, dummy.matrix);
+    }
+    group.add(imesh);
+
+    const boundGeo = new THREE.BoxGeometry(def.w * 0.5 + 0.2, def.h * 0.5 + 0.2, totalDepth + 0.2);
+    const wireMat = new THREE.LineBasicMaterial({ color: THEME.wireframe, transparent: true, opacity: 0.2 });
+    const wire = new THREE.LineSegments(new THREE.EdgesGeometry(boundGeo), wireMat);
+    group.add(wire);
+
+    return { group, imesh, mat, wire, slices: def.slices, sliceZ, gap };
+}
+
+function rebuildScene() {
+    if (!scene) return;
+    if (!currentMethod) currentMethod = METHODS[0];
+
+    const keep = [];
+    scene.children.forEach(c => {
+        if (c.type === 'AmbientLight' || c.type === 'DirectionalLight' || c.type === 'PointLight' || c.geometry?.type === 'PlaneGeometry' || c.type === 'LineSegments') {
+            keep.push(c);
+        }
+    });
+    
+    while(scene.children.length > 0){
+        const o = scene.children[0];
+        if(!keep.includes(o)) {
+            if(o.geometry) o.geometry.dispose();
+            if(o.material) {
+                if(Array.isArray(o.material)) o.material.forEach(m=>m.dispose());
+                else o.material.dispose();
+            }
+            scene.remove(o);
+        } else {
+            scene.remove(o); 
+        }
+    }
+    keep.forEach(k => scene.add(k));
+    
+    document.getElementById('annotations').innerHTML = '';
+    sceneObjects = { layers: [], extras: [], annotations: [], forwardParticles: null, backwardParticles: null };
+
+    const mc = new THREE.Color(currentMethod.color);
+
+    ARCH.forEach(def => {
+        const isEmissive = currentMethod.id === 'full' || (currentMethod.id === 'prefix' && def.id === 'qkv');
+        const layer = createWaferLayer(def, isEmissive ? mc : 0x000000);
+        layer.group.position.z = def.baseZ;
+        scene.add(layer.group);
+        
+        const anchor = new THREE.Object3D();
+        anchor.position.set(0, (def.h * 0.25) + 2.0, 0);
+        layer.group.add(anchor);
+        createAnnotation(def.name, anchor);
+        
+        sceneObjects.layers.push({ ...layer, baseZ: def.baseZ, isEmissive, id: def.id, def });
+    });
+
+    if (['lora', 'qlora', 'dora'].includes(currentMethod.id)) {
+        const qkv = sceneObjects.layers.find(l => l.id === 'qkv');
+        const loraGroup = new THREE.Group();
+        const matA = new THREE.Mesh(new THREE.BoxGeometry(2, 8, 0.2), new THREE.MeshStandardMaterial({color: THEME.accent, emissive: THEME.accent, emissiveIntensity: 2}));
+        matA.position.set(5, 0, 0.5);
+        const matB = new THREE.Mesh(new THREE.BoxGeometry(0.2, 8, 3), new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1}));
+        matB.position.set(6, 0, -0.5);
+        loraGroup.add(matA); loraGroup.add(matB);
+        qkv.group.add(loraGroup);
+        const loraAnchor = new THREE.Object3D(); loraAnchor.position.set(6, 5, 0); loraGroup.add(loraAnchor);
+        createAnnotation('LORA_ADAPTER_CORE', loraAnchor);
+    }
+
+    initDataParticles();
+}
+
+function initDataParticles() {
+    const fCount = 1500;
+    const fGeo = new THREE.BufferGeometry();
+    const fPos = new Float32Array(fCount * 3);
+    for(let i=0; i<fCount; i++) {
+        fPos[i*3] = (Math.random()-0.5) * 12;
+        fPos[i*3+1] = (Math.random()-0.5) * 12;
+        fPos[i*3+2] = -25 + Math.random() * 50;
+    }
+    fGeo.setAttribute('position', new THREE.BufferAttribute(fPos, 3));
+    const fMat = new THREE.PointsMaterial({ color: THEME.accent, size: 0.08, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+    const fPoints = new THREE.Points(fGeo, fMat);
+    scene.add(fPoints);
+
+    const bCount = 1000;
+    const bGeo = new THREE.BufferGeometry();
+    const bPos = new Float32Array(bCount * 3);
+    for(let i=0; i<bCount; i++) {
+        bPos[i*3] = (Math.random()-0.5) * 12;
+        bPos[i*3+1] = (Math.random()-0.5) * 12;
+        bPos[i*3+2] = -25 + Math.random() * 50;
+    }
+    bGeo.setAttribute('position', new THREE.BufferAttribute(bPos, 3));
+    const bMat = new THREE.PointsMaterial({ color: THEME.gradient, size: 0.08, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending });
+    const bPoints = new THREE.Points(bGeo, bMat);
+    scene.add(bPoints);
+
+    sceneObjects.forwardParticles = { points: fPoints, pos: fPos };
+    sceneObjects.backwardParticles = { points: bPoints, pos: bPos };
+}
+
+function animate() {
+    if(dead) return;
+    requestAnimationFrame(animate);
+    
+    time += 0.005;
+
+    let targetTh = camAngle.th;
+    let targetPh = camAngle.ph;
+    
+    if(!mouse.dn && !focusedLayerId) {
+        targetTh += time * 0.02;
+        targetPh += Math.sin(time) * 0.01;
+    }
+
+    camera.position.x = Math.sin(targetTh) * Math.cos(targetPh) * camAngle.d;
+    camera.position.y = Math.sin(targetPh) * camAngle.d + 2 + Math.sin(time*2)*0.5; 
+    camera.position.z = Math.cos(targetTh) * Math.cos(targetPh) * camAngle.d;
+    camera.lookAt(0, 0, 0);
+
+    if (rgbShiftPass) {
+        rgbShiftPass.uniforms['amount'].value = 0.001 + (trainingProgress * 0.003);
+    }
+
+    const explodeMult = isExploded ? 2.5 : 1.0;
+    sceneObjects.layers.forEach((layer, i) => {
+        layer.group.position.z += (layer.baseZ * explodeMult - layer.group.position.z) * 0.1;
+        
+        const dummy = new THREE.Object3D();
+        const unstackTarget = (focusedLayerId === layer.id && isExploded) ? 1.5 : 1.0;
+        
+        for(let j=0; j<layer.slices; j++) {
+            const mat = new THREE.Matrix4();
+            layer.imesh.getMatrixAt(j, mat);
+            const pos = new THREE.Vector3().setFromMatrixPosition(mat);
+            const targetZ = (j - layer.slices/2) * (layer.sliceZ + layer.gap) * unstackTarget;
+            pos.z += (targetZ - pos.z) * 0.1;
+            dummy.position.copy(pos);
+            dummy.updateMatrix();
+            layer.imesh.setMatrixAt(j, dummy.matrix);
+        }
+        layer.imesh.instanceMatrix.needsUpdate = true;
+
+        if (layer.isEmissive || trainingProgress > 0) {
+            const baseGlow = layer.isEmissive ? 0.5 : 0;
+            const trainGlow = Math.sin(time * 10 + i) * trainingProgress * 2;
+            layer.mat.emissiveIntensity = baseGlow + trainGlow;
+            layer.wire.material.opacity = 0.2 + (trainGlow * 0.2);
+        }
+    });
+
+    if (sceneObjects.forwardParticles) {
+        const {pos} = sceneObjects.forwardParticles;
+        for(let i=0; i<pos.length/3; i++) {
+            pos[i*3+2] += 0.2 * (1 + trainingProgress * 2); 
+            if(pos[i*3+2] > 25) pos[i*3+2] = -25;
+        }
+        sceneObjects.forwardParticles.points.geometry.attributes.position.needsUpdate = true;
+    }
+    
+    if (sceneObjects.backwardParticles) {
+        const {pos, points} = sceneObjects.backwardParticles;
+        points.visible = trainingProgress > 0;
+        if (points.visible) {
+            for(let i=0; i<pos.length/3; i++) {
+                pos[i*3+2] -= 0.15 * (trainingProgress * 4); 
+                if(pos[i*3+2] < -25) pos[i*3+2] = 25;
+            }
+            points.geometry.attributes.position.needsUpdate = true;
+        }
+    }
+
+    updateAnnotations();
+    composer.render();
+}
+
+function checkClick(e) {
+    raycaster.setFromCamera(mouse, camera);
+    const meshes = [];
+    scene.traverse(o => { if (o.isMesh || o.isInstancedMesh) meshes.push(o); });
+    const intersects = raycaster.intersectObjects(meshes, true);
+    
+    if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        let layer = null;
+        let current = obj;
+        while (current) {
+            layer = sceneObjects.layers.find(l => l.group === current || l.imesh === current);
+            if (layer) break;
+            current = current.parent;
+        }
+        if (layer) {
+            const arch = ARCH.find(a => a.id === layer.id);
+            if (arch) {
+                if (focusedLayerId === arch.id) unfocusLayer();
+                else focusLayer(arch, layer);
+            }
+            return;
+        }
+    }
+    if (focusedLayerId) unfocusLayer();
+}
+
+function focusLayer(arch, layer) {
+    focusedLayerId = arch.id;
+    const side = document.getElementById('side-insight');
+    if (side) side.classList.remove('translate-x-[400px]');
+    
+    document.getElementById('side-title').textContent = arch.name;
+    document.getElementById('side-desc').textContent = arch.desc;
+    document.getElementById('side-math').textContent = arch.math;
+    
+    const specsContainer = document.getElementById('side-specs');
+    if (specsContainer) {
+        specsContainer.innerHTML = Object.entries(arch.specs).map(([k, v]) => `
+            <div class="p-3 rounded-xl bg-black/40 border border-brand-accent/20">
+                <div class="text-[7px] text-brand-text3 uppercase mb-1 font-bold">${k}</div>
+                <div class="text-[10px] font-bold text-white truncate">${v}</div>
+            </div>
+        `).join('');
+    }
+
+    sceneObjects.layers.forEach(l => {
+        const isTarget = l.id === arch.id;
+        l.mat.opacity = isTarget ? 0.8 : 0.05;
+        l.wire.material.opacity = isTarget ? 0.5 : 0.02;
+    });
+    
+    camAngle.d = 20; 
+    if (!isExploded) toggleExplode(); 
+}
+
+function unfocusLayer() {
+    focusedLayerId = null;
+    const side = document.getElementById('side-insight');
+    if (side) side.classList.add('translate-x-[400px]');
+    sceneObjects.layers.forEach(l => {
+        l.mat.opacity = 0.5;
+        l.wire.material.opacity = 0.2;
+    });
+    camAngle.d = 35; 
+}
 
 function toggleExplode() {
   isExploded = !isExploded;
   const btn = document.getElementById('explode-btn');
   if (isExploded) {
-    btn?.classList.add('text-brand-accent', 'border-brand-accent', 'bg-brand-accent/20');
-    camAngle.d = 50;
+    btn?.classList.add('text-brand-bg', 'bg-brand-accent');
   } else {
-    btn?.classList.remove('text-brand-accent', 'border-brand-accent', 'bg-brand-accent/20');
-    camAngle.d = 35;
+    btn?.classList.remove('text-brand-bg', 'bg-brand-accent');
   }
 }
 
@@ -70,201 +461,14 @@ function pickMethod(id) {
 
   const descEl = document.getElementById('desc-text');
   if (descEl) descEl.textContent = currentMethod.desc;
-  
   const insightEl = document.getElementById('insight-text');
   if (insightEl) insightEl.textContent = currentMethod.insight;
-  
   const formulaText = document.getElementById('formula-text');
   if (formulaText) {
     formulaText.textContent = currentMethod.formula;
     formulaText.style.color = currentMethod.color;
   }
-  
   rebuildScene();
-}
-
-function initThree() {
-  const cvs = document.getElementById('three-canvas');
-  if (!cvs) return;
-  const container = cvs.parentElement;
-  
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x05070a);
-  scene.fog = new THREE.FogExp2(0x05070a, 0.01);
-
-  camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
-  
-  renderer = new THREE.WebGLRenderer({canvas:cvs, antialias:true, alpha: true});
-  renderer.setSize(container.clientWidth, container.clientHeight);
-  renderer.setPixelRatio(window.devicePixelRatio);
-  
-  // Lighting
-  scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-  const mainLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  mainLight.position.set(10, 20, 10);
-  scene.add(mainLight);
-
-  const accentLight = new THREE.PointLight(0x00f2ff, 2, 100);
-  accentLight.position.set(-10, 10, 10);
-  scene.add(accentLight);
-
-  const grid = new THREE.GridHelper(200, 50, 0x1e293b, 0x0a0d14);
-  grid.position.y = -10;
-  scene.add(grid);
-
-  // Composer for Bloom
-  const renderScene = new THREE.RenderPass(scene, camera);
-  const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(container.clientWidth, container.clientHeight), 1.0, 0.4, 0.85);
-  composer = new THREE.EffectComposer(renderer);
-  composer.addPass(renderScene);
-  composer.addPass(bloomPass);
-
-  cvs.addEventListener('mousedown', e=>{mouse={...mouse, dn:true,lx:e.clientX,ly:e.clientY}});
-  window.addEventListener('mousemove', e=>{
-    const rect = cvs.getBoundingClientRect();
-    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    if(!mouse.dn) { checkHover(e); return; }
-    camAngle.th-=(e.clientX-mouse.lx)*0.005;
-    camAngle.ph=Math.max(-0.5,Math.min(0.8,camAngle.ph+(e.clientY-mouse.ly)*0.005));
-    mouse.lx=e.clientX; mouse.ly=e.clientY;
-  });
-  window.addEventListener('mouseup', ()=>{mouse.dn=false});
-  cvs.addEventListener('wheel', e=>{
-    camAngle.d=Math.max(15,Math.min(100,camAngle.d+e.deltaY*0.05));
-    e.preventDefault();
-  },{passive:false});
-
-  window.addEventListener('resize', () => {
-    camera.aspect = container.clientWidth / container.clientHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    composer.setSize(container.clientWidth, container.clientHeight);
-  });
-}
-
-function createTensorLayer(def, methodColor) {
-    const group = new THREE.Group();
-    const mat = new THREE.MeshStandardMaterial({
-        color: 0x1a1e2e,
-        metalness: 0.8,
-        roughness: 0.2,
-        transparent: true,
-        opacity: 0.6,
-        emissive: methodColor,
-        emissiveIntensity: 0
-    });
-
-    const geo = new THREE.BoxGeometry(def.w * 0.5, def.h * 0.5, 0.4);
-    const mesh = new THREE.Mesh(geo, mat);
-    group.add(mesh);
-
-    const wireGeo = new THREE.EdgesGeometry(geo);
-    const wireMat = new THREE.LineBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.3 });
-    const wire = new THREE.LineSegments(wireGeo, wireMat);
-    group.add(wire);
-
-    return { group, mesh, mat, wire };
-}
-
-function rebuildScene() {
-    if (!scene) return;
-    if (!currentMethod) currentMethod = METHODS[0];
-
-    while(scene.children.length > 4) {
-        const o = scene.children[4];
-        if(o.geometry) o.geometry.dispose();
-        if(o.material) {
-            if(Array.isArray(o.material)) o.material.forEach(m=>m.dispose());
-            else o.material.dispose();
-        }
-        scene.remove(o);
-    }
-    
-    document.getElementById('annotations').innerHTML = '';
-    sceneObjects = { layers: [], extras: [], annotations: [], dataParticles: null };
-
-    const mc = new THREE.Color(currentMethod.color);
-
-    ARCH.forEach(def => {
-        const isEmissive = currentMethod.id === 'full' || (currentMethod.id === 'prefix' && def.id === 'qkv');
-        const layer = createTensorLayer(def, isEmissive ? mc : 0x000000);
-        layer.group.position.z = def.baseZ;
-        scene.add(layer.group);
-        
-        const anchor = new THREE.Object3D();
-        anchor.position.set(0, (def.h * 0.25) + 1.5, 0);
-        layer.group.add(anchor);
-        createAnnotation(def.name, anchor);
-        
-        sceneObjects.layers.push({ ...layer, baseZ: def.baseZ, isEmissive });
-    });
-
-    if (['lora', 'qlora', 'dora'].includes(currentMethod.id)) {
-        const qkv = sceneObjects.layers.find(l => l.baseZ === -4);
-        const loraGroup = new THREE.Group();
-        const matA = new THREE.Mesh(new THREE.BoxGeometry(2, 6, 0.1), new THREE.MeshStandardMaterial({color: mc, emissive: mc, emissiveIntensity: 2}));
-        matA.position.set(4, 0, 0.2);
-        const matB = new THREE.Mesh(new THREE.BoxGeometry(0.1, 6, 2), new THREE.MeshStandardMaterial({color: 0xffffff, emissive: 0xffffff, emissiveIntensity: 1}));
-        matB.position.set(4.5, 0, 0);
-        loraGroup.add(matA); loraGroup.add(matB);
-        qkv.group.add(loraGroup);
-        const loraAnchor = new THREE.Object3D(); loraAnchor.position.set(4.5, 4, 0); loraGroup.add(loraAnchor);
-        createAnnotation('LORA_ADAPTER', loraAnchor);
-    }
-
-    initDataParticles();
-}
-
-function initDataParticles() {
-    const count = 1000;
-    const geo = new THREE.BufferGeometry();
-    const pos = new Float32Array(count * 3);
-    const vel = new Float32Array(count);
-    for(let i=0; i<count; i++) {
-        pos[i*3] = (Math.random()-0.5) * 15;
-        pos[i*3+1] = (Math.random()-0.5) * 15;
-        pos[i*3+2] = -30 + Math.random() * 60;
-        vel[i] = 0.1 + Math.random() * 0.2;
-    }
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    const mat = new THREE.PointsMaterial({ color: 0x00f2ff, size: 0.05, transparent: true, opacity: 0.4 });
-    const points = new THREE.Points(geo, mat);
-    scene.add(points);
-    sceneObjects.dataParticles = { points, pos, vel };
-}
-
-function animate() {
-    if(dead) return;
-    requestAnimationFrame(animate);
-    const t = performance.now() * 0.001;
-
-    if(!mouse.dn) camAngle.th += 0.002;
-    camera.position.x = Math.sin(camAngle.th) * Math.cos(camAngle.ph) * camAngle.d;
-    camera.position.y = Math.sin(camAngle.ph) * camAngle.d + 2;
-    camera.position.z = Math.cos(camAngle.th) * Math.cos(camAngle.ph) * camAngle.d;
-    camera.lookAt(0, 0, 0);
-
-    const explodeMult = isExploded ? 3.0 : 1.0;
-    sceneObjects.layers.forEach((layer, i) => {
-        layer.group.position.z += (layer.baseZ * explodeMult - layer.group.position.z) * 0.05;
-        if (layer.isEmissive) {
-            layer.mat.emissiveIntensity = (0.5 + Math.sin(t * 3 + i) * 0.5) * (1 + trainingProgress * 2);
-        }
-    });
-
-    if (sceneObjects.dataParticles) {
-        const {pos} = sceneObjects.dataParticles;
-        for(let i=0; i<pos.length/3; i++) {
-            pos[i*3+2] += 0.2 * (1 + trainingProgress * 5);
-            if(pos[i*3+2] > 30) pos[i*3+2] = -30;
-        }
-        sceneObjects.dataParticles.points.geometry.attributes.position.needsUpdate = true;
-    }
-
-    updateAnnotations();
-    if (composer) composer.render();
-    else renderer.render(scene, camera);
 }
 
 function createAnnotation(text, obj3D) {
@@ -277,32 +481,36 @@ function createAnnotation(text, obj3D) {
 
 function checkHover(e) {
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(scene.children, true);
+    const meshes = [];
+    scene.traverse(o => { if (o.isMesh || o.isInstancedMesh) meshes.push(o); });
+    const intersects = raycaster.intersectObjects(meshes, true);
     const tooltip = document.getElementById('hover-tooltip');
     if (!tooltip) return;
+    if (focusedLayerId) { tooltip.classList.add('hidden'); return; }
+
     if (intersects.length > 0) {
         let obj = intersects[0].object;
         let layer = null;
-        sceneObjects.layers.forEach(l => {
-            if (l.group === obj.parent || l.group === obj.parent?.parent) layer = l;
-        });
+        let current = obj;
+        while (current) {
+            layer = sceneObjects.layers.find(l => l.group === current || l.imesh === current);
+            if (layer) break;
+            current = current.parent;
+        }
         if (layer) {
             tooltip.classList.remove('hidden');
             tooltip.style.left = `${e.clientX + 20}px`;
             tooltip.style.top = `${e.clientY + 20}px`;
-            const arch = ARCH.find(a => a.baseZ === layer.baseZ);
-            
-            document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER_SCHEMA';
-            
-            // Refined Dimension & Logic Info
-            const dimText = arch ? `DIM: ${arch.w * 512}x${arch.h * 512}` : 'TYPE: RANK_DECOMPOSED';
-            const descText = arch ? `<div class="mt-2 pt-2 border-t border-white/10 text-[10px] text-brand-text2 leading-tight max-w-[200px] normal-case font-sans italic">${arch.desc}</div>` : '';
-            
-            document.getElementById('tooltip-dim').innerHTML = `${dimText}${descText}`;
+            const arch = ARCH.find(a => a.id === layer.id);
+            document.getElementById('tooltip-title').textContent = arch ? arch.name : 'ADAPTER';
+            const dimText = arch ? `SLICES: ${layer.slices} (Depth)` : 'NODE: ACTIVE';
+            document.getElementById('tooltip-dim').innerHTML = `${dimText}<br><span class="text-brand-text3 text-[8px] mt-1 block uppercase tracking-widest font-bold">Click to drill down</span>`;
+            document.getElementById('three-canvas').style.cursor = 'pointer';
             return;
         }
     }
     tooltip.classList.add('hidden');
+    document.getElementById('three-canvas').style.cursor = 'grab';
 }
 
 function updateAnnotations() {
