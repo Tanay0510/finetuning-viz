@@ -61,6 +61,9 @@
       </div>
 
       <div class="absolute top-8 right-8 z-10 flex flex-col items-end gap-3">
+        <button onclick="startWalkthrough()" id="start-walk-btn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-accent/20 backdrop-blur-xl border border-brand-accent/40 font-mono text-[10px] font-bold tracking-[0.2em] text-brand-accent hover:bg-brand-accent hover:text-brand-bg transition-all shadow-lg">
+          ✨ START GUIDED JOURNEY
+        </button>
         <button onclick="toggleExplode()" id="explode-btn" class="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/60 backdrop-blur-xl border border-white/10 font-mono text-[10px] font-bold tracking-[0.2em] text-brand-text3 hover:text-white transition-all shadow-lg">
           💥 EXPLODED VIEW
         </button>
@@ -80,6 +83,24 @@
       <!-- 3D Annotations Container -->
       <div id="annotations" class="absolute inset-0 pointer-events-none z-20"></div>
       
+      <!-- Walkthrough HUD -->
+      <div id="walkthrough-hud" class="absolute bottom-32 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-4 transition-all duration-700 translate-y-[200px]">
+          <div class="px-6 py-2 rounded-full bg-brand-accent/10 border border-brand-accent/30 backdrop-blur-xl">
+              <span id="walk-stage-title" class="text-[10px] font-mono font-bold text-brand-accent uppercase tracking-[0.3em]">STAGE_01: INPUT_TOKENIZATION</span>
+          </div>
+          <div class="flex items-center gap-6 p-4 rounded-[24px] bg-black/60 border border-white/10 backdrop-blur-2xl shadow-2xl">
+              <button onclick="prevWalkStep()" class="p-3 rounded-xl border border-white/5 hover:bg-white/5 text-brand-text3 transition-all">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <div class="flex gap-2" id="walk-progress">
+                  <!-- Dots like ● ○ ○ -->
+              </div>
+              <button onclick="nextWalkStep()" class="p-3 rounded-xl bg-brand-accent text-brand-bg hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,242,255,0.3)]">
+                  <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+              </button>
+          </div>
+      </div>
+
       <!-- Scanlines Overlay -->
       <div class="absolute inset-0 scanlines z-30 opacity-40 mix-blend-overlay"></div>
 
