@@ -4,6 +4,14 @@ let mouse = {dn:false, lx:0, ly:0};
 let tokens = [];
 let attentionLines = [];
 let activeTokenIndex = -1;
+let currentHeadType = 'global';
+
+function setAttentionHead(type) {
+    currentHeadType = type;
+    document.querySelectorAll('.hud-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(`head-${type}`)?.classList.add('active');
+    if (activeTokenIndex !== -1) highlightAttention(activeTokenIndex);
+}
 
 function initThree() {
   const cvs = document.getElementById('three-canvas');
@@ -90,9 +98,23 @@ function highlightAttention(index) {
     tokens.forEach((target, i) => {
         if (i === index) return;
 
-        // Simulate some fake attention weights (closer words or random)
-        const weight = Math.random() * 0.8 + 0.1;
+        let weight = 0;
+        const dist = Math.abs(i - index);
+
+        // Pattern Algorithms
+        if (currentHeadType === 'global') {
+            weight = 0.1 + Math.random() * 0.4;
+            if (dist < 3) weight += 0.3;
+        } else if (currentHeadType === 'local') {
+            weight = Math.max(0, 1.0 - (dist * 0.3));
+        } else if (currentHeadType === 'syntax') {
+            if (i === 0 || i === tokens.length - 1) weight = 0.8;
+            else if (dist === 2) weight = 0.6;
+            else weight = 0.1;
+        }
         
+        if (weight < 0.1) return;
+
         const curve = new THREE.QuadraticBezierCurve3(
             source.pos,
             new THREE.Vector3((source.pos.x + target.pos.x)/2, 4 * weight, (source.pos.z + target.pos.z)/2 + 2),

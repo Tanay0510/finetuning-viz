@@ -1,6 +1,7 @@
 let state = {
   method: 'lora', model: '7b', gpu: 'a100_80', gpu_count: 1, sharding: 'none',
   rank: 16, batch: 4, seq: 2048, precision: 'bf16', optimizer: 'paged_adamw_8bit', grad_checkpoint: true,
+  dataset_size: 1000, epochs: 3
 };
 
 function setState(key, value, selectorPrefix) {
@@ -26,11 +27,15 @@ function updateCalc() {
   state.batch = parseInt(document.getElementById('batch-slider').value);
   state.seq = parseInt(document.getElementById('seq-slider').value);
   state.gpu_count = parseInt(document.getElementById('gpu-count-slider').value);
+  state.dataset_size = parseInt(document.getElementById('dataset-slider').value);
+  state.epochs = parseInt(document.getElementById('epochs-slider').value);
   
   document.getElementById('rank-val').textContent = state.rank;
   document.getElementById('batch-val').textContent = state.batch;
   document.getElementById('seq-val').textContent = state.seq;
   document.getElementById('gpu-count-val').textContent = state.gpu_count;
+  document.getElementById('dataset-val').textContent = state.dataset_size;
+  document.getElementById('epochs-val').textContent = state.epochs;
   
   const loraControls = document.getElementById('lora-controls');
   if (loraControls) {
@@ -72,10 +77,20 @@ function updateCalc() {
   }
 
   const totalVRAM = weightsGB + gradsGB + optimGB + actGB;
-  updateUI(totalVRAM, { weightsGB, gradsGB, optimGB, actGB }, { trainableParams, totalParams }, gpu);
+
+  // --- NEW: Logistics Math ---
+  const totalTokens = state.dataset_size * state.seq * state.epochs;
+  const tflopsNeeded = (totalParams * totalTokens * 6) / 1e12;
+  const clusterTflops = gpu.tflops * N * 0.5; // 0.5 is efficiency (MFU)
+  
+  const totalSeconds = tflopsNeeded / clusterTflops;
+  const totalHours = totalSeconds / 3600;
+  const totalCost = totalHours * gpu.cost * N;
+
+  updateUI(totalVRAM, { weightsGB, gradsGB, optimGB, actGB }, { trainableParams, totalParams }, gpu, { totalHours, totalCost });
 }
 
-function updateUI(totalVRAM, mem, params, gpu) {
+function updateUI(totalVRAM, mem, params, gpu, logistics) {
     const gpuVRAM = gpu.vram;
     const fits = totalVRAM <= gpuVRAM;
     const tight = totalVRAM > gpuVRAM * 0.85 && fits;
@@ -116,6 +131,16 @@ function updateUI(totalVRAM, mem, params, gpu) {
 
     const fmtParams = params.trainableParams >= 1e9 ? (params.trainableParams/1e9).toFixed(1)+'B' : (params.trainableParams/1e6).toFixed(1)+'M';
     document.getElementById('res-params').textContent = fmtParams;
+
+    // Logistics Output
+    const timeEl = document.getElementById('res-time');
+    const costEl = document.getElementById('res-cost');
+    if (timeEl && costEl) {
+        const h = Math.floor(logistics.totalHours);
+        const m = Math.round((logistics.totalHours - h) * 60);
+        timeEl.textContent = `${h}h ${m}m`;
+        costEl.textContent = `$${logistics.totalCost.toFixed(2)}`;
+    }
     
     const v = document.getElementById('verdict');
     if (fits && !tight) {
@@ -164,6 +189,9 @@ function downloadRecipe() {
 async function saveRecipe() {
     const name = prompt("Enter a name for this recipe:", "My Llama-2-7b LoRA");
     if (!name) return;
+    
+    const description = prompt("Enter a brief description (optional):", "Optimized for consumer GPUs.");
+    const isPublic = confirm("Would you like to share this recipe with the community Zoo?");
 
     try {
         const response = await fetch('/api/recipes', {
@@ -171,26 +199,54 @@ async function saveRecipe() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 name: name,
-                config: state
+                description: description,
+                config: state,
+                is_public: isPublic
             })
         });
         const result = await response.json();
-        alert("Recipe saved successfully!");
+        alert(isPublic ? "Recipe saved and shared to the Zoo!" : "Recipe saved to your profile.");
     } catch (err) {
         console.error(err);
         alert("Failed to save recipe.");
     }
 }
 
-function initPlayground() {
+async function loadClonedRecipe() {
+    const params = new URLSearchParams(window.location.search);
+    const cloneId = params.get('clone');
+    if (!cloneId) return;
+
+    try {
+        const response = await fetch(`/api/recipes/${cloneId}`);
+        const recipe = await response.json();
+        if (recipe.config) {
+            state = { ...state, ...recipe.config };
+            // Refresh UI components
+            initPlaygroundUI();
+            updateCalc();
+            alert(`Loaded community recipe: ${recipe.name}`);
+        }
+    } catch (err) {
+        console.error("Clone failed", err);
+    }
+}
+
+// Split UI initialization for reuse
+function initPlaygroundUI() {
     Object.keys(state).forEach(key => {
         const value = state[key];
         if (typeof value === 'boolean') {
-            document.getElementById(`${key.replace('_', '-')}-btn`)?.classList.toggle('active', value);
+            const btn = document.getElementById(`${key.replace('_', '-')}-btn`);
+            if (btn) btn.classList.toggle('active', value);
         } else {
-            document.querySelectorAll(`[data-id='${value}']`).forEach(b => {
+            // Remove active from all siblings
+            const activeBtns = document.querySelectorAll(`[data-id='${value}']`);
+            activeBtns.forEach(b => {
                 const parent = b.parentElement;
                 if(parent && (parent.id.includes(key.replace('_', '-')) || parent.id === 'model-selector' || parent.id === 'gpu-selector')) {
+                   // Clear siblings
+                   Array.from(parent.children).forEach(s => s.classList.remove('active'));
                    b.classList.add('active');
                 }
             });
@@ -201,7 +257,12 @@ function initPlayground() {
     if (currentMethod) {
         document.getElementById('method-desc').textContent = currentMethod.desc;
     }
+}
+
+function initPlayground() {
+    initPlaygroundUI();
     updateCalc();
+    loadClonedRecipe();
 }
 
 document.addEventListener('configReady', initPlayground);

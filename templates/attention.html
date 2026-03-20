@@ -42,7 +42,13 @@
         </div>
       </div>
 
-      <div class="absolute top-28 left-1/2 -translate-x-1/2 z-10 text-[10px] font-mono text-brand-text3 uppercase tracking-[0.3em] opacity-50">
+      <div class="absolute top-28 left-1/2 -translate-x-1/2 z-10 flex gap-4">
+        <button onclick="setAttentionHead('global')" id="head-global" class="hud-btn !py-1.5 !px-4 !rounded-full active">🌐 Global</button>
+        <button onclick="setAttentionHead('local')" id="head-local" class="hud-btn !py-1.5 !px-4 !rounded-full">📍 Local</button>
+        <button onclick="setAttentionHead('syntax')" id="head-syntax" class="hud-btn !py-1.5 !px-4 !rounded-full">🖇️ Syntax</button>
+      </div>
+
+      <div class="absolute top-44 left-1/2 -translate-x-1/2 z-10 text-[10px] font-mono text-brand-text3 uppercase tracking-[0.3em] opacity-50">
         Hover over tokens to see activation threads
       </div>
 
